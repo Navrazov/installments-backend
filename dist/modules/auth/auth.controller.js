@@ -48,7 +48,7 @@ let AuthController = class AuthController {
         return { message: 'Logged out successfully' };
     }
     async getMe(req) {
-        return req.user;
+        return this.authService.getMe(req.user._id.toString());
     }
 };
 exports.AuthController = AuthController;

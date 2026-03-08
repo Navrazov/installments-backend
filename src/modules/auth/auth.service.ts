@@ -10,6 +10,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import {
+  Organization,
+  OrganizationDocument,
+} from '../organizations/schemas/organization.schema';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 const BCRYPT_SALT_ROUNDS = 12;
@@ -20,6 +24,8 @@ export class AuthService {
 
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Organization.name)
+    private readonly organizationModel: Model<OrganizationDocument>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -27,7 +33,7 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+  ): Promise<{ accessToken: string; refreshToken: string; user: any; organizationTier?: string }> {
     const user = await this.validateUser(email, password);
 
     if (!user) {
@@ -43,6 +49,16 @@ export class AuthService {
 
     this.logger.log(`User logged in: ${user.email}`);
 
+    let organizationTier: string | undefined;
+    if (user.organizationId) {
+      const org = await this.organizationModel
+        .findById(user.organizationId)
+        .select('subscriptionTier')
+        .lean()
+        .exec();
+      organizationTier = org?.subscriptionTier;
+    }
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -53,8 +69,25 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         organizationId: user.organizationId,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
       },
+      organizationTier,
     };
+  }
+
+  async getMe(userId: string) {
+    const user = await this.userModel
+      .findById(userId)
+      .select('-passwordHash -refreshToken')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return user;
   }
 
   async refreshTokens(

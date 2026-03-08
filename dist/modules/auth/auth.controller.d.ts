@@ -12,6 +12,7 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: string;
         user: any;
+        organizationTier?: string;
     }>;
     refresh(refreshTokenDto: RefreshTokenDto): Promise<{
         accessToken: string;
@@ -20,5 +21,9 @@ export declare class AuthController {
     logout(req: any): Promise<{
         message: string;
     }>;
-    getMe(req: any): Promise<any>;
+    getMe(req: any): Promise<import("mongoose").FlattenMaps<import("../users/schemas/user.schema").UserDocument> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }>;
 }

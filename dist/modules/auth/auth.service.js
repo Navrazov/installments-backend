@@ -21,10 +21,12 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const bcrypt = require("bcryptjs");
 const user_schema_1 = require("../users/schemas/user.schema");
+const organization_schema_1 = require("../organizations/schemas/organization.schema");
 const BCRYPT_SALT_ROUNDS = 12;
 let AuthService = AuthService_1 = class AuthService {
-    constructor(userModel, jwtService, configService) {
+    constructor(userModel, organizationModel, jwtService, configService) {
         this.userModel = userModel;
+        this.organizationModel = organizationModel;
         this.jwtService = jwtService;
         this.configService = configService;
         this.logger = new common_1.Logger(AuthService_1.name);
@@ -40,6 +42,15 @@ let AuthService = AuthService_1 = class AuthService {
             .findByIdAndUpdate(user._id, { lastLoginAt: new Date() })
             .exec();
         this.logger.log(`User logged in: ${user.email}`);
+        let organizationTier;
+        if (user.organizationId) {
+            const org = await this.organizationModel
+                .findById(user.organizationId)
+                .select('subscriptionTier')
+                .lean()
+                .exec();
+            organizationTier = org?.subscriptionTier;
+        }
         return {
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
@@ -50,8 +61,22 @@ let AuthService = AuthService_1 = class AuthService {
                 lastName: user.lastName,
                 role: user.role,
                 organizationId: user.organizationId,
+                isActive: user.isActive,
+                createdAt: user.createdAt,
             },
+            organizationTier,
         };
+    }
+    async getMe(userId) {
+        const user = await this.userModel
+            .findById(userId)
+            .select('-passwordHash -refreshToken')
+            .lean()
+            .exec();
+        if (!user) {
+            throw new common_1.UnauthorizedException('User not found');
+        }
+        return user;
     }
     async refreshTokens(userId, refreshToken) {
         const user = await this.userModel
@@ -135,7 +160,9 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = AuthService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
+    __param(1, (0, mongoose_1.InjectModel)(organization_schema_1.Organization.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
         jwt_1.JwtService,
         config_1.ConfigService])
 ], AuthService);
