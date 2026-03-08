@@ -39,7 +39,7 @@ __decorate([
     __metadata("design:type", String)
 ], Client.prototype, "lastName", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "middleName", void 0);
 __decorate([
@@ -65,19 +65,19 @@ __decorate([
     __metadata("design:type", ClientPassport)
 ], Client.prototype, "passport", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "address", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "region", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "city", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "workplace", void 0);
 __decorate([
@@ -85,7 +85,7 @@ __decorate([
     __metadata("design:type", Object)
 ], Client.prototype, "income", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Client.prototype, "notes", void 0);
 __decorate([

@@ -76,7 +76,7 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], User.prototype, "invitedBy", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: null, select: false }),
+    (0, mongoose_1.Prop)({ type: String, default: null, select: false }),
     __metadata("design:type", Object)
 ], User.prototype, "refreshToken", void 0);
 exports.User = User = __decorate([

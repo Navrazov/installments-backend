@@ -56,7 +56,7 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   invitedBy?: Types.ObjectId;
 
-  @Prop({ default: null, select: false })
+  @Prop({ type: String, default: null, select: false })
   refreshToken: string | null;
 }
 

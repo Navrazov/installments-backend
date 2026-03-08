@@ -56,7 +56,7 @@ export class Warning {
   @Prop({ required: true, trim: true })
   description: string;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   evidence: string | null;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

@@ -7,7 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -199,7 +199,7 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
-    const tempPassword = uuidv4().slice(0, 12);
+    const tempPassword = randomUUID().slice(0, 12);
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
     const user = new this.userModel({

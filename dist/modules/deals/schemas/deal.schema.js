@@ -124,7 +124,7 @@ __decorate([
     __metadata("design:type", String)
 ], Deal.prototype, "status", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Deal.prototype, "branchName", void 0);
 __decorate([
@@ -136,7 +136,7 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Deal.prototype, "guarantorId", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Deal.prototype, "comments", void 0);
 __decorate([

@@ -16,33 +16,81 @@ const UserSchema = new mongoose.Schema({
     lastLoginAt: { type: Date, default: null },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
 }, { timestamps: true });
+const OrgSchema = new mongoose.Schema({
+    name: String,
+    slug: String,
+    subscriptionTier: { type: String, default: 'premium' },
+    subscriptionStatus: { type: String, default: 'active' },
+    subscriptionExpiresAt: { type: Date, default: null },
+    ownerId: { type: mongoose.Schema.Types.ObjectId },
+    settings: {
+        currency: { type: String, default: 'RUB' },
+        timezone: { type: String, default: 'Europe/Moscow' },
+        language: { type: String, default: 'ru' },
+    },
+    limits: {
+        maxUsers: { type: Number, default: 100 },
+        maxClients: { type: Number, default: 10000 },
+        maxDeals: { type: Number, default: 50000 },
+    },
+    branches: { type: Array, default: [] },
+    isActive: { type: Boolean, default: true },
+}, { timestamps: true });
 async function seed() {
     const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/halal-installments';
-    console.log('Connecting to MongoDB...', uri);
+    console.log('Connecting to MongoDB...');
     await mongoose.connect(uri);
-    console.log('Connected.');
+    console.log('Connected.\n');
     const User = mongoose.model('User', UserSchema);
-    const email = process.env.SUPER_ADMIN_EMAIL || 'admin@halal-crm.com';
-    const password = process.env.SUPER_ADMIN_PASSWORD || 'Admin123!@#';
-    const existing = await User.findOne({ email });
-    if (existing) {
-        console.log(`Super admin already exists: ${email}`);
-        await mongoose.disconnect();
-        return;
-    }
-    const passwordHash = await bcryptjs.hash(password, 12);
+    const Org = mongoose.model('Organization', OrgSchema);
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@admin.com';
+    const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+    await User.deleteMany({ role: 'super_admin' });
+    const adminHash = await bcryptjs.hash(adminPassword, 12);
     await User.create({
-        email,
-        passwordHash,
+        email: adminEmail,
+        passwordHash: adminHash,
         firstName: 'Super',
         lastName: 'Admin',
         role: 'super_admin',
         organizationId: null,
         isActive: true,
     });
-    console.log(`Super admin created: ${email}`);
-    console.log('Password:', password);
-    console.log('\nDon\'t forget to change the password in production!');
+    console.log('Super Admin created:');
+    console.log('  Email:    ' + adminEmail);
+    console.log('  Password: ' + adminPassword + '\n');
+    let org = await Org.findOne({ slug: 'demo-org' });
+    if (!org) {
+        org = await Org.create({
+            name: 'Demo Organization',
+            slug: 'demo-org',
+            subscriptionTier: 'premium',
+            subscriptionStatus: 'active',
+            settings: { currency: 'RUB', timezone: 'Europe/Moscow', language: 'ru' },
+            limits: { maxUsers: 100, maxClients: 10000, maxDeals: 50000 },
+            branches: [{ name: 'Главный офис', address: 'Москва', phone: '+7 (999) 123-45-67', isActive: true }],
+            isActive: true,
+        });
+    }
+    const crmEmail = 'user@crm.com';
+    const crmPassword = 'user123';
+    await User.deleteOne({ email: crmEmail });
+    const crmHash = await bcryptjs.hash(crmPassword, 12);
+    const crmUser = await User.create({
+        email: crmEmail,
+        passwordHash: crmHash,
+        firstName: 'Иван',
+        lastName: 'Петров',
+        role: 'org_owner',
+        organizationId: org._id,
+        isActive: true,
+    });
+    await Org.updateOne({ _id: org._id }, { ownerId: crmUser._id });
+    console.log('CRM User created:');
+    console.log('  Email:    ' + crmEmail);
+    console.log('  Password: ' + crmPassword);
+    console.log('  Org:      ' + org.name + ' (premium)\n');
+    console.log('Seed complete!');
     await mongoose.disconnect();
 }
 seed().catch((err) => {

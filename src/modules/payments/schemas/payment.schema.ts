@@ -43,7 +43,7 @@ export class Payment {
   @Prop({ required: true, type: Number, min: 0 })
   remainingAfterPayment: number;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   comment: string | null;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

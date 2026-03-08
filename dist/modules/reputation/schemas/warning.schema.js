@@ -60,7 +60,7 @@ __decorate([
     __metadata("design:type", String)
 ], Warning.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Warning.prototype, "evidence", void 0);
 __decorate([

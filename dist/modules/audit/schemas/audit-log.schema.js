@@ -50,11 +50,11 @@ __decorate([
     __metadata("design:type", AuditChanges)
 ], AuditLog.prototype, "changes", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], AuditLog.prototype, "ipAddress", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], AuditLog.prototype, "userAgent", void 0);
 __decorate([

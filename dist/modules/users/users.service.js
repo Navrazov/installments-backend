@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const bcrypt = require("bcryptjs");
-const uuid_1 = require("uuid");
+const crypto_1 = require("crypto");
 const user_schema_1 = require("./schemas/user.schema");
 let UsersService = class UsersService {
     constructor(userModel) {
@@ -158,7 +158,7 @@ let UsersService = class UsersService {
         if (existingUser) {
             throw new common_1.ConflictException('User with this email already exists');
         }
-        const tempPassword = (0, uuid_1.v4)().slice(0, 12);
+        const tempPassword = (0, crypto_1.randomUUID)().slice(0, 12);
         const passwordHash = await bcrypt.hash(tempPassword, 12);
         const user = new this.userModel({
             email: dto.email,

@@ -36,10 +36,10 @@ export class AuditLog {
   )
   changes: AuditChanges;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   ipAddress: string | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   userAgent: string | null;
 
   @Prop({ type: Date, default: Date.now, index: true })

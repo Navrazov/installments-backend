@@ -63,7 +63,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Payment.prototype, "remainingAfterPayment", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Payment.prototype, "comment", void 0);
 __decorate([

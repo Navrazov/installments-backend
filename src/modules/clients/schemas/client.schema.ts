@@ -30,7 +30,7 @@ export class Client {
   @Prop({ required: true, trim: true })
   lastName: string;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   middleName: string | null;
 
   @Prop({ required: true, trim: true, index: true })
@@ -58,22 +58,22 @@ export class Client {
   )
   passport: ClientPassport;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   address: string | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   region: string | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   city: string | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   workplace: string | null;
 
   @Prop({ type: Number, default: null })
   income: number | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   notes: string | null;
 
   @Prop({ type: [String], default: [], index: true })

@@ -42,7 +42,7 @@ export class Overdue {
   @Prop({ type: Date, default: null })
   promisedPaymentDate: Date | null;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   managerComment: string | null;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, index: true })

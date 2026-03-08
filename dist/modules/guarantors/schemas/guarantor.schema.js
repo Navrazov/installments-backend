@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", String)
 ], Guarantor.prototype, "lastName", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Guarantor.prototype, "middleName", void 0);
 __decorate([
@@ -57,11 +57,11 @@ __decorate([
     __metadata("design:type", GuarantorPassport)
 ], Guarantor.prototype, "passport", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Guarantor.prototype, "address", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true, default: null }),
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
     __metadata("design:type", Object)
 ], Guarantor.prototype, "notes", void 0);
 __decorate([

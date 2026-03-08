@@ -99,7 +99,7 @@ export class Deal {
   })
   status: DealStatus;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   branchName: string | null;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -108,7 +108,7 @@ export class Deal {
   @Prop({ type: Types.ObjectId, ref: 'Guarantor', required: false })
   guarantorId?: Types.ObjectId;
 
-  @Prop({ trim: true, default: null })
+  @Prop({ type: String, trim: true, default: null })
   comments: string | null;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
