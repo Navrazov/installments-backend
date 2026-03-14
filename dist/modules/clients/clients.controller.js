@@ -33,6 +33,10 @@ let ClientsController = class ClientsController {
         const orgId = req.user.organizationId;
         return this.clientsService.findAll(orgId, query);
     }
+    async exportClients(req) {
+        const orgId = req.user.organizationId;
+        return this.clientsService.exportClients(orgId);
+    }
     async search(req, q) {
         const orgId = req.user.organizationId;
         return this.clientsService.search(orgId, q);
@@ -40,6 +44,10 @@ let ClientsController = class ClientsController {
     async findById(req, id) {
         const orgId = req.user.organizationId;
         return this.clientsService.findById(orgId, id);
+    }
+    async getGuarantors(req, id) {
+        const orgId = req.user.organizationId;
+        return this.clientsService.getGuarantorsForClient(orgId, id);
     }
     async getClientHistory(req, id) {
         const orgId = req.user.organizationId;
@@ -57,6 +65,19 @@ let ClientsController = class ClientsController {
             return this.clientsService.addToBlacklist(orgId, id, userId);
         }
         return this.clientsService.removeFromBlacklist(orgId, id, userId);
+    }
+    async addGuarantor(req, clientId, body) {
+        const orgId = req.user.organizationId;
+        return this.clientsService.addGuarantor(orgId, clientId, body.guarantorId, body.relationship);
+    }
+    async removeGuarantor(req, clientId, body) {
+        const orgId = req.user.organizationId;
+        return this.clientsService.removeGuarantor(orgId, clientId, body.guarantorId);
+    }
+    async importClients(req, body) {
+        const orgId = req.user.organizationId;
+        const userId = req.user._id;
+        return this.clientsService.importClients(orgId, body.clients, userId);
     }
     async updateRiskStatus(req, id, riskStatus) {
         const orgId = req.user.organizationId;
@@ -83,6 +104,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ClientsController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('export/all'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ClientsController.prototype, "exportClients", null);
+__decorate([
     (0, common_1.Get)('search'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('q')),
@@ -98,6 +126,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ClientsController.prototype, "findById", null);
+__decorate([
+    (0, common_1.Get)(':id/guarantors'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], ClientsController.prototype, "getGuarantors", null);
 __decorate([
     (0, common_1.Get)(':id/history'),
     __param(0, (0, common_1.Req)()),
@@ -125,6 +161,35 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, Boolean]),
     __metadata("design:returntype", Promise)
 ], ClientsController.prototype, "toggleBlacklist", null);
+__decorate([
+    (0, common_1.Post)(':id/add-guarantor'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], ClientsController.prototype, "addGuarantor", null);
+__decorate([
+    (0, common_1.Post)(':id/remove-guarantor'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], ClientsController.prototype, "removeGuarantor", null);
+__decorate([
+    (0, common_1.Post)('import'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ClientsController.prototype, "importClients", null);
 __decorate([
     (0, common_1.Patch)(':id/risk-status'),
     __param(0, (0, common_1.Req)()),

@@ -96,6 +96,21 @@ export class Client {
   @Prop({ type: Number, default: 0, min: 0 })
   warningsCount: number;
 
+  @Prop({ type: String, trim: true, default: null })
+  actualAddress: string | null;
+
+  @Prop({ type: Boolean, default: false })
+  isGuarantor: boolean;
+
+  @Prop({
+    type: [{
+      clientId: { type: Types.ObjectId, ref: 'Client' },
+      relationship: { type: String },
+    }],
+    default: [],
+  })
+  guarantorFor: { clientId: Types.ObjectId; relationship: string }[];
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 
@@ -110,3 +125,4 @@ ClientSchema.index({ organizationId: 1, phone: 1 });
 ClientSchema.index({ organizationId: 1, riskStatus: 1 });
 ClientSchema.index({ organizationId: 1, isBlacklisted: 1 });
 ClientSchema.index({ organizationId: 1, createdAt: -1 });
+ClientSchema.index({ organizationId: 1, isGuarantor: 1 });

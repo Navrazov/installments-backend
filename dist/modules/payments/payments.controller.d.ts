@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../../common/interfaces/request.interface'
 export declare class PaymentsController {
     private readonly paymentsService;
     constructor(paymentsService: PaymentsService);
+    private assertCanWritePayments;
     create(req: AuthenticatedRequest, dto: CreatePaymentDto): Promise<import("./schemas/payment.schema").PaymentDocument>;
     getStats(req: AuthenticatedRequest, dateFrom?: string, dateTo?: string): Promise<{
         totalCollected: number;

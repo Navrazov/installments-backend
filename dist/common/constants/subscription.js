@@ -38,6 +38,7 @@ const PREMIUM_FEATURES = [
     'reputation_full',
     'multi_branch',
     'analytics_advanced',
+    'roles_management',
 ];
 exports.FEATURE_MATRIX = {
     [SubscriptionTier.BASIC]: BASIC_FEATURES,

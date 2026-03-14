@@ -114,6 +114,24 @@ __decorate([
     __metadata("design:type", Number)
 ], Client.prototype, "warningsCount", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
+    __metadata("design:type", Object)
+], Client.prototype, "actualAddress", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Boolean, default: false }),
+    __metadata("design:type", Boolean)
+], Client.prototype, "isGuarantor", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: [{
+                clientId: { type: mongoose_2.Types.ObjectId, ref: 'Client' },
+                relationship: { type: String },
+            }],
+        default: [],
+    }),
+    __metadata("design:type", Array)
+], Client.prototype, "guarantorFor", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'User', required: true }),
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Client.prototype, "createdBy", void 0);
@@ -126,4 +144,5 @@ exports.ClientSchema.index({ organizationId: 1, phone: 1 });
 exports.ClientSchema.index({ organizationId: 1, riskStatus: 1 });
 exports.ClientSchema.index({ organizationId: 1, isBlacklisted: 1 });
 exports.ClientSchema.index({ organizationId: 1, createdAt: -1 });
+exports.ClientSchema.index({ organizationId: 1, isGuarantor: 1 });
 //# sourceMappingURL=client.schema.js.map

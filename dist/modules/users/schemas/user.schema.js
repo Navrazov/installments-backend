@@ -16,9 +16,11 @@ var UserRole;
 (function (UserRole) {
     UserRole["SUPER_ADMIN"] = "super_admin";
     UserRole["ADMIN_PARTNER"] = "admin_partner";
-    UserRole["ORG_OWNER"] = "org_owner";
-    UserRole["ORG_MANAGER"] = "org_manager";
-    UserRole["ORG_EMPLOYEE"] = "org_employee";
+    UserRole["DIRECTOR"] = "director";
+    UserRole["MANAGER"] = "manager";
+    UserRole["CASHIER"] = "cashier";
+    UserRole["ACCOUNTANT"] = "accountant";
+    UserRole["SECURITY"] = "security";
 })(UserRole || (exports.UserRole = UserRole = {}));
 let User = class User {
 };
@@ -49,7 +51,7 @@ __decorate([
     (0, mongoose_1.Prop)({
         required: true,
         enum: UserRole,
-        default: UserRole.ORG_EMPLOYEE,
+        default: UserRole.MANAGER,
         index: true,
     }),
     __metadata("design:type", String)

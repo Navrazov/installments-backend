@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateClientDto = exports.PassportDto = void 0;
+exports.CreateClientDto = exports.GuarantorForDto = exports.PassportDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const client_schema_1 = require("../schemas/client.schema");
@@ -33,15 +33,26 @@ __decorate([
 ], PassportDto.prototype, "issuedBy", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDate)(),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], PassportDto.prototype, "issuedDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PassportDto.prototype, "registrationAddress", void 0);
+class GuarantorForDto {
+}
+exports.GuarantorForDto = GuarantorForDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], GuarantorForDto.prototype, "clientId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], GuarantorForDto.prototype, "relationship", void 0);
 class CreateClientDto {
 }
 exports.CreateClientDto = CreateClientDto;
@@ -80,9 +91,7 @@ __decorate([
 ], CreateClientDto.prototype, "additionalPhones", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDate)(),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], CreateClientDto.prototype, "birthDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
@@ -149,4 +158,22 @@ __decorate([
     (0, class_validator_1.Max)(100),
     __metadata("design:type", Number)
 ], CreateClientDto.prototype, "reputationScore", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], CreateClientDto.prototype, "actualAddress", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateClientDto.prototype, "isGuarantor", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => GuarantorForDto),
+    __metadata("design:type", Array)
+], CreateClientDto.prototype, "guarantorFor", void 0);
 //# sourceMappingURL=create-client.dto.js.map

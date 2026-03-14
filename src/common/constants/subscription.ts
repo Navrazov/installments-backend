@@ -27,7 +27,8 @@ export type Feature =
   | 'calculator'
   | 'multi_branch'
   | 'audit_logs'
-  | 'analytics_advanced';
+  | 'analytics_advanced'
+  | 'roles_management';
 
 const BASIC_FEATURES: Feature[] = [
   'dashboard_basic',
@@ -61,6 +62,7 @@ const PREMIUM_FEATURES: Feature[] = [
   'reputation_full',
   'multi_branch',
   'analytics_advanced',
+  'roles_management',
 ];
 
 export const FEATURE_MATRIX: Record<SubscriptionTier, Feature[]> = {

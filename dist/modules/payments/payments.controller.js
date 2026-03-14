@@ -18,11 +18,25 @@ const payments_service_1 = require("./payments.service");
 const create_payment_dto_1 = require("./dto/create-payment.dto");
 const query_payment_dto_1 = require("./dto/query-payment.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const roles_1 = require("../../common/constants/roles");
+const PAYMENT_WRITE_ROLES = [
+    roles_1.UserRole.CASHIER,
+    roles_1.UserRole.SECURITY,
+    roles_1.UserRole.DIRECTOR,
+    roles_1.UserRole.ADMIN_PARTNER,
+    roles_1.UserRole.SUPER_ADMIN,
+];
 let PaymentsController = class PaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
     }
+    assertCanWritePayments(role) {
+        if (!PAYMENT_WRITE_ROLES.includes(role)) {
+            throw new common_1.ForbiddenException('Только кассир, отдел взыскания или управляющий могут вносить платежи');
+        }
+    }
     async create(req, dto) {
+        this.assertCanWritePayments(req.user.role);
         const orgId = req.user.organizationId;
         const userId = req.user._id;
         return this.paymentsService.create(orgId, dto, userId);
@@ -36,6 +50,7 @@ let PaymentsController = class PaymentsController {
         return this.paymentsService.getPaymentsByDeal(orgId, dealId);
     }
     async earlyRepayment(req, body) {
+        this.assertCanWritePayments(req.user.role);
         const orgId = req.user.organizationId;
         const userId = req.user._id;
         return this.paymentsService.earlyRepayment(orgId, body.dealId, body.amount, userId);

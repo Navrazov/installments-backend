@@ -96,6 +96,10 @@ export class ClientsService {
       filter.isBlacklisted = isBlacklisted;
     }
 
+    if (query.isGuarantor !== undefined) {
+      filter.isGuarantor = query.isGuarantor;
+    }
+
     const sort: Record<string, 1 | -1> = {
       [sortBy]: sortOrder === 'asc' ? 1 : -1,
     };
@@ -367,6 +371,7 @@ export class ClientsService {
           { address: searchRegex },
           { city: searchRegex },
           { region: searchRegex },
+          { actualAddress: searchRegex },
         ],
       })
       .limit(20)
@@ -376,6 +381,85 @@ export class ClientsService {
     return clients.map((c) =>
       this.decryptClientPassport(c),
     ) as ClientDocument[];
+  }
+
+  async getGuarantorsForClient(orgId: Types.ObjectId, clientId: string): Promise<ClientDocument[]> {
+    if (!Types.ObjectId.isValid(clientId)) {
+      throw new BadRequestException('Invalid client ID');
+    }
+
+    const clients = await this.clientModel
+      .find({
+        organizationId: orgId,
+        'guarantorFor.clientId': new Types.ObjectId(clientId),
+      })
+      .lean()
+      .exec();
+
+    return clients.map(c => this.decryptClientPassport(c) as ClientDocument);
+  }
+
+  async addGuarantor(orgId: Types.ObjectId, clientId: string, guarantorId: string, relationship: string): Promise<ClientDocument> {
+    if (!Types.ObjectId.isValid(clientId) || !Types.ObjectId.isValid(guarantorId)) {
+      throw new BadRequestException('Invalid client or guarantor ID');
+    }
+
+    await this.clientModel.findOneAndUpdate(
+      { _id: new Types.ObjectId(guarantorId), organizationId: orgId },
+      {
+        $set: { isGuarantor: true },
+        $addToSet: { guarantorFor: { clientId: new Types.ObjectId(clientId), relationship } },
+      },
+    ).exec();
+
+    return this.findById(orgId, clientId);
+  }
+
+  async removeGuarantor(orgId: Types.ObjectId, clientId: string, guarantorId: string): Promise<ClientDocument> {
+    if (!Types.ObjectId.isValid(clientId) || !Types.ObjectId.isValid(guarantorId)) {
+      throw new BadRequestException('Invalid client or guarantor ID');
+    }
+
+    const guarantor = await this.clientModel.findOneAndUpdate(
+      { _id: new Types.ObjectId(guarantorId), organizationId: orgId },
+      { $pull: { guarantorFor: { clientId: new Types.ObjectId(clientId) } } },
+      { new: true },
+    ).lean().exec();
+
+    // If guarantor has no more links, unmark isGuarantor
+    if (guarantor && (!guarantor.guarantorFor || guarantor.guarantorFor.length === 0)) {
+      await this.clientModel.findByIdAndUpdate(guarantorId, { $set: { isGuarantor: false } }).exec();
+    }
+
+    return this.findById(orgId, clientId);
+  }
+
+  async importClients(
+    orgId: Types.ObjectId,
+    dtos: CreateClientDto[],
+    userId: Types.ObjectId,
+  ): Promise<{ imported: number; errors: { row: number; error: string }[] }> {
+    const results = { imported: 0, errors: [] as { row: number; error: string }[] };
+
+    for (let i = 0; i < dtos.length; i++) {
+      try {
+        await this.create(orgId, dtos[i], userId);
+        results.imported++;
+      } catch (error) {
+        results.errors.push({ row: i + 1, error: error.message || 'Unknown error' });
+      }
+    }
+
+    return results;
+  }
+
+  async exportClients(orgId: Types.ObjectId): Promise<ClientDocument[]> {
+    const clients = await this.clientModel
+      .find({ organizationId: orgId })
+      .sort({ lastName: 1, firstName: 1 })
+      .lean()
+      .exec();
+    return clients.map(c => this.decryptClientPassport(c)) as ClientDocument[];
   }
 
   private encryptPassport(passport: any): any {

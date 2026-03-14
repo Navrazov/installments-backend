@@ -44,6 +44,14 @@ export class ClientsController {
     return this.clientsService.findAll(orgId, query);
   }
 
+  @Get('export/all')
+  async exportClients(
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.clientsService.exportClients(orgId);
+  }
+
   @Get('search')
   async search(
     @Req() req: AuthenticatedRequest,
@@ -60,6 +68,15 @@ export class ClientsController {
   ) {
     const orgId = req.user.organizationId!;
     return this.clientsService.findById(orgId, id);
+  }
+
+  @Get(':id/guarantors')
+  async getGuarantors(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.clientsService.getGuarantorsForClient(orgId, id);
   }
 
   @Get(':id/history')
@@ -96,6 +113,39 @@ export class ClientsController {
       return this.clientsService.addToBlacklist(orgId, id, userId);
     }
     return this.clientsService.removeFromBlacklist(orgId, id, userId);
+  }
+
+  @Post(':id/add-guarantor')
+  @HttpCode(HttpStatus.OK)
+  async addGuarantor(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') clientId: string,
+    @Body() body: { guarantorId: string; relationship: string },
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.clientsService.addGuarantor(orgId, clientId, body.guarantorId, body.relationship);
+  }
+
+  @Post(':id/remove-guarantor')
+  @HttpCode(HttpStatus.OK)
+  async removeGuarantor(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') clientId: string,
+    @Body() body: { guarantorId: string },
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.clientsService.removeGuarantor(orgId, clientId, body.guarantorId);
+  }
+
+  @Post('import')
+  @HttpCode(HttpStatus.CREATED)
+  async importClients(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { clients: CreateClientDto[] },
+  ) {
+    const orgId = req.user.organizationId!;
+    const userId = req.user._id;
+    return this.clientsService.importClients(orgId, body.clients, userId);
   }
 
   @Patch(':id/risk-status')

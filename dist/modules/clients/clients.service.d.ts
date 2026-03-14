@@ -38,6 +38,17 @@ export declare class ClientsService {
         };
     }>;
     search(orgId: Types.ObjectId, query: string): Promise<ClientDocument[]>;
+    getGuarantorsForClient(orgId: Types.ObjectId, clientId: string): Promise<ClientDocument[]>;
+    addGuarantor(orgId: Types.ObjectId, clientId: string, guarantorId: string, relationship: string): Promise<ClientDocument>;
+    removeGuarantor(orgId: Types.ObjectId, clientId: string, guarantorId: string): Promise<ClientDocument>;
+    importClients(orgId: Types.ObjectId, dtos: CreateClientDto[], userId: Types.ObjectId): Promise<{
+        imported: number;
+        errors: {
+            row: number;
+            error: string;
+        }[];
+    }>;
+    exportClients(orgId: Types.ObjectId): Promise<ClientDocument[]>;
     private encryptPassport;
     private decryptClientPassport;
 }

@@ -72,7 +72,7 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -114,7 +114,7 @@ export class OrganizationsController {
   }
 
   @Post(':id/branches')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async addBranch(
     @Param('id') id: string,
     @Body() branchDto: OrganizationBranchDto,
@@ -125,7 +125,7 @@ export class OrganizationsController {
   }
 
   @Patch(':id/branches/:branchIndex')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async updateBranch(
     @Param('id') id: string,
     @Param('branchIndex') branchIndex: string,
@@ -141,7 +141,7 @@ export class OrganizationsController {
   }
 
   @Delete(':id/branches/:branchIndex')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async removeBranch(
     @Param('id') id: string,
     @Param('branchIndex') branchIndex: string,
@@ -155,7 +155,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/stats')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async getStats(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -165,7 +165,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/features/:feature')
-  @Roles(UserRole.ORG_EMPLOYEE)
+  @Roles(UserRole.CASHIER)
   async checkFeature(
     @Param('id') id: string,
     @Param('feature') feature: string,

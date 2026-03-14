@@ -9,8 +9,10 @@ export declare class ClientsController {
     constructor(clientsService: ClientsService);
     create(req: AuthenticatedRequest, dto: CreateClientDto): Promise<import("./schemas/client.schema").ClientDocument>;
     findAll(req: AuthenticatedRequest, query: QueryClientDto): Promise<import("./clients.service").PaginatedResponse<import("./schemas/client.schema").ClientDocument>>;
+    exportClients(req: AuthenticatedRequest): Promise<import("./schemas/client.schema").ClientDocument[]>;
     search(req: AuthenticatedRequest, q: string): Promise<import("./schemas/client.schema").ClientDocument[]>;
     findById(req: AuthenticatedRequest, id: string): Promise<import("./schemas/client.schema").ClientDocument>;
+    getGuarantors(req: AuthenticatedRequest, id: string): Promise<import("./schemas/client.schema").ClientDocument[]>;
     getClientHistory(req: AuthenticatedRequest, id: string): Promise<{
         client: import("./schemas/client.schema").ClientDocument;
         deals: import("../deals/schemas/deal.schema").DealDocument[];
@@ -25,5 +27,21 @@ export declare class ClientsController {
     }>;
     update(req: AuthenticatedRequest, id: string, dto: UpdateClientDto): Promise<import("./schemas/client.schema").ClientDocument>;
     toggleBlacklist(req: AuthenticatedRequest, id: string, blacklisted: boolean): Promise<import("./schemas/client.schema").ClientDocument>;
+    addGuarantor(req: AuthenticatedRequest, clientId: string, body: {
+        guarantorId: string;
+        relationship: string;
+    }): Promise<import("./schemas/client.schema").ClientDocument>;
+    removeGuarantor(req: AuthenticatedRequest, clientId: string, body: {
+        guarantorId: string;
+    }): Promise<import("./schemas/client.schema").ClientDocument>;
+    importClients(req: AuthenticatedRequest, body: {
+        clients: CreateClientDto[];
+    }): Promise<{
+        imported: number;
+        errors: {
+            row: number;
+            error: string;
+        }[];
+    }>;
     updateRiskStatus(req: AuthenticatedRequest, id: string, riskStatus: RiskStatus): Promise<import("./schemas/client.schema").ClientDocument>;
 }

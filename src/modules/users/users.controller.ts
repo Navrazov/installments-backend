@@ -26,7 +26,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.ORG_MANAGER)
+  @Roles(UserRole.MANAGER)
   async findAll(
     @CurrentUser() currentUser: JwtPayloadUser,
     @Query('role') role?: UserRole,
@@ -61,7 +61,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ORG_MANAGER)
+  @Roles(UserRole.MANAGER)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -85,7 +85,7 @@ export class UsersController {
   }
 
   @Post('invite')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async invite(
     @Body() dto: InviteUserDto,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -120,7 +120,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -159,7 +159,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ORG_OWNER)
+  @Roles(UserRole.DIRECTOR)
   async deactivate(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -206,16 +206,25 @@ export class UsersController {
     const allowedRolesByInviter: Partial<Record<UserRole, UserRole[]>> = {
       [UserRole.SUPER_ADMIN]: [
         UserRole.ADMIN_PARTNER,
-        UserRole.ORG_OWNER,
-        UserRole.ORG_MANAGER,
-        UserRole.ORG_EMPLOYEE,
+        UserRole.DIRECTOR,
+        UserRole.MANAGER,
+        UserRole.CASHIER,
+        UserRole.ACCOUNTANT,
+        UserRole.SECURITY,
       ],
       [UserRole.ADMIN_PARTNER]: [
-        UserRole.ORG_OWNER,
-        UserRole.ORG_MANAGER,
-        UserRole.ORG_EMPLOYEE,
+        UserRole.DIRECTOR,
+        UserRole.MANAGER,
+        UserRole.CASHIER,
+        UserRole.ACCOUNTANT,
+        UserRole.SECURITY,
       ],
-      [UserRole.ORG_OWNER]: [UserRole.ORG_MANAGER, UserRole.ORG_EMPLOYEE],
+      [UserRole.DIRECTOR]: [
+        UserRole.MANAGER,
+        UserRole.CASHIER,
+        UserRole.ACCOUNTANT,
+        UserRole.SECURITY,
+      ],
     };
 
     const allowed = allowedRolesByInviter[currentUser.role];

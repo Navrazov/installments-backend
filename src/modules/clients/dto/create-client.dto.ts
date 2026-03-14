@@ -30,13 +30,21 @@ export class PassportDto {
   issuedBy?: string;
 
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  issuedDate?: Date;
+  issuedDate?: string | Date;
 
   @IsOptional()
   @IsString()
   registrationAddress?: string;
+}
+
+export class GuarantorForDto {
+  @IsString()
+  @IsNotEmpty()
+  clientId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  relationship: string;
 }
 
 export class CreateClientDto {
@@ -69,9 +77,7 @@ export class CreateClientDto {
   additionalPhones?: string[];
 
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  birthDate?: Date;
+  birthDate?: string | Date;
 
   @IsOptional()
   @ValidateNested()
@@ -126,4 +132,19 @@ export class CreateClientDto {
   @Min(0)
   @Max(100)
   reputationScore?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  actualAddress?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isGuarantor?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuarantorForDto)
+  guarantorFor?: GuarantorForDto[];
 }

@@ -81,7 +81,7 @@ async function seed() {
         passwordHash: crmHash,
         firstName: 'Иван',
         lastName: 'Петров',
-        role: 'org_owner',
+        role: 'director',
         organizationId: org._id,
         isActive: true,
     });

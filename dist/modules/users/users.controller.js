@@ -115,16 +115,25 @@ let UsersController = class UsersController {
         const allowedRolesByInviter = {
             [roles_1.UserRole.SUPER_ADMIN]: [
                 roles_1.UserRole.ADMIN_PARTNER,
-                roles_1.UserRole.ORG_OWNER,
-                roles_1.UserRole.ORG_MANAGER,
-                roles_1.UserRole.ORG_EMPLOYEE,
+                roles_1.UserRole.DIRECTOR,
+                roles_1.UserRole.MANAGER,
+                roles_1.UserRole.CASHIER,
+                roles_1.UserRole.ACCOUNTANT,
+                roles_1.UserRole.SECURITY,
             ],
             [roles_1.UserRole.ADMIN_PARTNER]: [
-                roles_1.UserRole.ORG_OWNER,
-                roles_1.UserRole.ORG_MANAGER,
-                roles_1.UserRole.ORG_EMPLOYEE,
+                roles_1.UserRole.DIRECTOR,
+                roles_1.UserRole.MANAGER,
+                roles_1.UserRole.CASHIER,
+                roles_1.UserRole.ACCOUNTANT,
+                roles_1.UserRole.SECURITY,
             ],
-            [roles_1.UserRole.ORG_OWNER]: [roles_1.UserRole.ORG_MANAGER, roles_1.UserRole.ORG_EMPLOYEE],
+            [roles_1.UserRole.DIRECTOR]: [
+                roles_1.UserRole.MANAGER,
+                roles_1.UserRole.CASHIER,
+                roles_1.UserRole.ACCOUNTANT,
+                roles_1.UserRole.SECURITY,
+            ],
         };
         const allowed = allowedRolesByInviter[currentUser.role];
         if (!allowed || !allowed.includes(targetRole)) {
@@ -135,7 +144,7 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_MANAGER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.MANAGER),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('role')),
     __param(2, (0, common_1.Query)('isActive')),
@@ -148,7 +157,7 @@ __decorate([
 ], UsersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_MANAGER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.MANAGER),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -157,7 +166,7 @@ __decorate([
 ], UsersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)('invite'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -166,7 +175,7 @@ __decorate([
 ], UsersController.prototype, "invite", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -176,7 +185,7 @@ __decorate([
 ], UsersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),

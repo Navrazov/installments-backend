@@ -3,8 +3,12 @@ export declare class PassportDto {
     series?: string;
     number?: string;
     issuedBy?: string;
-    issuedDate?: Date;
+    issuedDate?: string | Date;
     registrationAddress?: string;
+}
+export declare class GuarantorForDto {
+    clientId: string;
+    relationship: string;
 }
 export declare class CreateClientDto {
     firstName: string;
@@ -12,7 +16,7 @@ export declare class CreateClientDto {
     middleName?: string;
     phone: string;
     additionalPhones?: string[];
-    birthDate?: Date;
+    birthDate?: string | Date;
     passport?: PassportDto;
     address?: string;
     region?: string;
@@ -24,4 +28,7 @@ export declare class CreateClientDto {
     riskStatus?: RiskStatus;
     isBlacklisted?: boolean;
     reputationScore?: number;
+    actualAddress?: string;
+    isGuarantor?: boolean;
+    guarantorFor?: GuarantorForDto[];
 }

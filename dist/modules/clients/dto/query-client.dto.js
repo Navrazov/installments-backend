@@ -86,4 +86,16 @@ __decorate([
     (0, class_validator_1.IsIn)(['asc', 'desc']),
     __metadata("design:type", String)
 ], QueryClientDto.prototype, "sortOrder", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true')
+            return true;
+        if (value === 'false')
+            return false;
+        return value;
+    }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], QueryClientDto.prototype, "isGuarantor", void 0);
 //# sourceMappingURL=query-client.dto.js.map

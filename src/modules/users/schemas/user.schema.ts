@@ -4,9 +4,11 @@ import { Document, Types } from 'mongoose';
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN_PARTNER = 'admin_partner',
-  ORG_OWNER = 'org_owner',
-  ORG_MANAGER = 'org_manager',
-  ORG_EMPLOYEE = 'org_employee',
+  DIRECTOR = 'director',
+  MANAGER = 'manager',
+  CASHIER = 'cashier',
+  ACCOUNTANT = 'accountant',
+  SECURITY = 'security',
 }
 
 export type UserDocument = User & Document;
@@ -34,7 +36,7 @@ export class User {
   @Prop({
     required: true,
     enum: UserRole,
-    default: UserRole.ORG_EMPLOYEE,
+    default: UserRole.MANAGER,
     index: true,
   })
   role: UserRole;

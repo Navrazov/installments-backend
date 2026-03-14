@@ -123,7 +123,7 @@ __decorate([
 ], OrganizationsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -167,7 +167,7 @@ __decorate([
 ], OrganizationsController.prototype, "updateSubscription", null);
 __decorate([
     (0, common_1.Post)(':id/branches'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -177,7 +177,7 @@ __decorate([
 ], OrganizationsController.prototype, "addBranch", null);
 __decorate([
     (0, common_1.Patch)(':id/branches/:branchIndex'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('branchIndex')),
     __param(2, (0, common_1.Body)()),
@@ -188,7 +188,7 @@ __decorate([
 ], OrganizationsController.prototype, "updateBranch", null);
 __decorate([
     (0, common_1.Delete)(':id/branches/:branchIndex'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('branchIndex')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -198,7 +198,7 @@ __decorate([
 ], OrganizationsController.prototype, "removeBranch", null);
 __decorate([
     (0, common_1.Get)(':id/stats'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_OWNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -207,7 +207,7 @@ __decorate([
 ], OrganizationsController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Get)(':id/features/:feature'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ORG_EMPLOYEE),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('feature')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),

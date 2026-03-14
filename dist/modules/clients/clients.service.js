@@ -64,6 +64,9 @@ let ClientsService = ClientsService_1 = class ClientsService {
         if (isBlacklisted !== undefined) {
             filter.isBlacklisted = isBlacklisted;
         }
+        if (query.isGuarantor !== undefined) {
+            filter.isGuarantor = query.isGuarantor;
+        }
         const sort = {
             [sortBy]: sortOrder === 'asc' ? 1 : -1,
         };
@@ -238,12 +241,67 @@ let ClientsService = ClientsService_1 = class ClientsService {
                 { address: searchRegex },
                 { city: searchRegex },
                 { region: searchRegex },
+                { actualAddress: searchRegex },
             ],
         })
             .limit(20)
             .lean()
             .exec();
         return clients.map((c) => this.decryptClientPassport(c));
+    }
+    async getGuarantorsForClient(orgId, clientId) {
+        if (!mongoose_2.Types.ObjectId.isValid(clientId)) {
+            throw new common_1.BadRequestException('Invalid client ID');
+        }
+        const clients = await this.clientModel
+            .find({
+            organizationId: orgId,
+            'guarantorFor.clientId': new mongoose_2.Types.ObjectId(clientId),
+        })
+            .lean()
+            .exec();
+        return clients.map(c => this.decryptClientPassport(c));
+    }
+    async addGuarantor(orgId, clientId, guarantorId, relationship) {
+        if (!mongoose_2.Types.ObjectId.isValid(clientId) || !mongoose_2.Types.ObjectId.isValid(guarantorId)) {
+            throw new common_1.BadRequestException('Invalid client or guarantor ID');
+        }
+        await this.clientModel.findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(guarantorId), organizationId: orgId }, {
+            $set: { isGuarantor: true },
+            $addToSet: { guarantorFor: { clientId: new mongoose_2.Types.ObjectId(clientId), relationship } },
+        }).exec();
+        return this.findById(orgId, clientId);
+    }
+    async removeGuarantor(orgId, clientId, guarantorId) {
+        if (!mongoose_2.Types.ObjectId.isValid(clientId) || !mongoose_2.Types.ObjectId.isValid(guarantorId)) {
+            throw new common_1.BadRequestException('Invalid client or guarantor ID');
+        }
+        const guarantor = await this.clientModel.findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(guarantorId), organizationId: orgId }, { $pull: { guarantorFor: { clientId: new mongoose_2.Types.ObjectId(clientId) } } }, { new: true }).lean().exec();
+        if (guarantor && (!guarantor.guarantorFor || guarantor.guarantorFor.length === 0)) {
+            await this.clientModel.findByIdAndUpdate(guarantorId, { $set: { isGuarantor: false } }).exec();
+        }
+        return this.findById(orgId, clientId);
+    }
+    async importClients(orgId, dtos, userId) {
+        const results = { imported: 0, errors: [] };
+        for (let i = 0; i < dtos.length; i++) {
+            try {
+                await this.create(orgId, dtos[i], userId);
+                results.imported++;
+            }
+            catch (error) {
+                results.errors.push({ row: i + 1, error: error.message || 'Unknown error' });
+            }
+        }
+        return results;
+    }
+    async exportClients(orgId) {
+        const clients = await this.clientModel
+            .find({ organizationId: orgId })
+            .sort({ lastName: 1, firstName: 1 })
+            .lean()
+            .exec();
+        return clients.map(c => this.decryptClientPassport(c));
     }
     encryptPassport(passport) {
         const encrypted = {};

@@ -8,4 +8,5 @@ export declare class QueryClientDto {
     isBlacklisted?: boolean;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    isGuarantor?: boolean;
 }

@@ -34,6 +34,12 @@ export declare class Client {
     isBlacklisted: boolean;
     reputationScore: number;
     warningsCount: number;
+    actualAddress: string | null;
+    isGuarantor: boolean;
+    guarantorFor: {
+        clientId: Types.ObjectId;
+        relationship: string;
+    }[];
     createdBy: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
