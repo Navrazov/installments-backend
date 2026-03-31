@@ -9,6 +9,7 @@ var HttpExceptionFilter_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpExceptionFilter = void 0;
 const common_1 = require("@nestjs/common");
+const validation_message_pipe_1 = require("../pipes/validation-message.pipe");
 let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
     constructor() {
         this.logger = new common_1.Logger(HttpExceptionFilter_1.name);
@@ -49,8 +50,8 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
         const errorResponse = {
             success: false,
             statusCode,
-            error,
-            message,
+            error: this.translateErrorName(error),
+            message: (0, validation_message_pipe_1.translateValidationMessages)(message),
             path: request.url,
             timestamp: new Date().toISOString(),
         };
@@ -68,6 +69,19 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
             500: 'Internal Server Error',
         };
         return errorNames[statusCode] || 'Error';
+    }
+    translateErrorName(error) {
+        const translations = {
+            'Bad Request': 'Ошибка в данных',
+            'Unauthorized': 'Требуется авторизация',
+            'Forbidden': 'Доступ запрещён',
+            'Not Found': 'Не найдено',
+            'Conflict': 'Конфликт данных',
+            'Unprocessable Entity': 'Некорректные данные',
+            'Too Many Requests': 'Слишком много запросов',
+            'Internal Server Error': 'Внутренняя ошибка сервера',
+        };
+        return translations[error] || error;
     }
 };
 exports.HttpExceptionFilter = HttpExceptionFilter;

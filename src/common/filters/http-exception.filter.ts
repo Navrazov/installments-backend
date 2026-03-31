@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { translateValidationMessages } from '../pipes/validation-message.pipe';
 
 interface ErrorResponse {
   success: false;
@@ -63,8 +64,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const errorResponse: ErrorResponse = {
       success: false,
       statusCode,
-      error,
-      message,
+      error: this.translateErrorName(error),
+      message: translateValidationMessages(message),
       path: request.url,
       timestamp: new Date().toISOString(),
     };
@@ -85,5 +86,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     return errorNames[statusCode] || 'Error';
+  }
+
+  private translateErrorName(error: string): string {
+    const translations: Record<string, string> = {
+      'Bad Request': 'Ошибка в данных',
+      'Unauthorized': 'Требуется авторизация',
+      'Forbidden': 'Доступ запрещён',
+      'Not Found': 'Не найдено',
+      'Conflict': 'Конфликт данных',
+      'Unprocessable Entity': 'Некорректные данные',
+      'Too Many Requests': 'Слишком много запросов',
+      'Internal Server Error': 'Внутренняя ошибка сервера',
+    };
+
+    return translations[error] || error;
   }
 }
