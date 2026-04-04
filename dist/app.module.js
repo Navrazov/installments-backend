@@ -25,6 +25,7 @@ const reports_module_1 = require("./modules/reports/reports.module");
 const exports_module_1 = require("./modules/exports/exports.module");
 const calculator_module_1 = require("./modules/calculator/calculator.module");
 const audit_module_1 = require("./modules/audit/audit.module");
+const investors_module_1 = require("./modules/investors/investors.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -79,6 +80,7 @@ exports.AppModule = AppModule = __decorate([
             exports_module_1.ExportsModule,
             calculator_module_1.CalculatorModule,
             audit_module_1.AuditModule,
+            investors_module_1.InvestorsModule,
         ],
         providers: [
             {

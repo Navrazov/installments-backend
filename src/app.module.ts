@@ -16,6 +16,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { CalculatorModule } from './modules/calculator/calculator.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { InvestorsModule } from './modules/investors/investors.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { AuditModule } from './modules/audit/audit.module';
     ExportsModule,
     CalculatorModule,
     AuditModule,
+    InvestorsModule,
   ],
   providers: [
     {
