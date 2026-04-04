@@ -17,6 +17,16 @@ export declare class DealsController {
         totalCollected: number;
         totalRemaining: number;
     }>;
+    getUpcomingPayments(req: AuthenticatedRequest, days?: string): Promise<{
+        dealId: string;
+        dealNumber: string;
+        clientName: string;
+        clientPhone: string;
+        date: Date;
+        amount: number;
+        daysUntil: number;
+        status: string;
+    }[]>;
     findAll(req: AuthenticatedRequest, query: QueryDealDto): Promise<{
         data: import("./schemas/deal.schema").DealDocument[];
         total: number;

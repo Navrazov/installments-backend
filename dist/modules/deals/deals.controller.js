@@ -32,6 +32,10 @@ let DealsController = class DealsController {
         const orgId = req.user.organizationId;
         return this.dealsService.getStats(orgId);
     }
+    async getUpcomingPayments(req, days) {
+        const orgId = req.user.organizationId;
+        return this.dealsService.getUpcomingPayments(orgId, Number(days) || 7);
+    }
     async findAll(req, query) {
         const orgId = req.user.organizationId;
         return this.dealsService.findAll(orgId, query);
@@ -72,6 +76,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DealsController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('upcoming-payments'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('days')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], DealsController.prototype, "getUpcomingPayments", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),

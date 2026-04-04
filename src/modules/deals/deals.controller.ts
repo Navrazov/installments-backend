@@ -38,6 +38,15 @@ export class DealsController {
     return this.dealsService.getStats(orgId);
   }
 
+  @Get('upcoming-payments')
+  async getUpcomingPayments(
+    @Req() req: AuthenticatedRequest,
+    @Query('days') days?: string,
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.dealsService.getUpcomingPayments(orgId, Number(days) || 7);
+  }
+
   @Get()
   async findAll(
     @Req() req: AuthenticatedRequest,

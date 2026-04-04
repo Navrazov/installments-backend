@@ -394,6 +394,82 @@ export class DealsService {
     );
   }
 
+  async getUpcomingPayments(
+    orgId: Types.ObjectId,
+    days = 7,
+  ): Promise<{
+    dealId: string;
+    dealNumber: string;
+    clientName: string;
+    clientPhone: string;
+    date: Date;
+    amount: number;
+    daysUntil: number;
+    status: string;
+  }[]> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const future = new Date(now);
+    future.setDate(future.getDate() + days);
+
+    const deals = await this.dealModel
+      .find({
+        organizationId: orgId,
+        status: { $in: [DealStatus.ACTIVE, DealStatus.OVERDUE] },
+      })
+      .populate<{ clientId: { firstName: string; lastName: string; phone: string } }>(
+        'clientId',
+        'firstName lastName phone',
+      )
+      .select('dealNumber clientId paymentSchedule')
+      .exec();
+
+    const result: {
+      dealId: string;
+      dealNumber: string;
+      clientName: string;
+      clientPhone: string;
+      date: Date;
+      amount: number;
+      daysUntil: number;
+      status: string;
+    }[] = [];
+
+    for (const deal of deals) {
+      const client = deal.clientId as any;
+      const clientName = client
+        ? `${client.lastName} ${client.firstName}`
+        : '—';
+      const clientPhone = client?.phone || '';
+
+      for (const entry of deal.paymentSchedule) {
+        if (entry.status === PaymentScheduleStatus.PAID) continue;
+
+        const entryDate = new Date(entry.date);
+        entryDate.setHours(0, 0, 0, 0);
+
+        // Include overdue entries + entries due within `days`
+        if (entryDate <= future) {
+          const daysUntil = Math.ceil(
+            (entryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          result.push({
+            dealId: deal._id.toString(),
+            dealNumber: deal.dealNumber,
+            clientName,
+            clientPhone,
+            date: entry.date,
+            amount: entry.amount,
+            daysUntil,
+            status: entry.status,
+          });
+        }
+      }
+    }
+
+    return result.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 30);
+  }
+
   generatePaymentSchedule(
     startDate: Date,
     termMonths: number,

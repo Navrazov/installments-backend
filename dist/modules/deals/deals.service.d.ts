@@ -32,6 +32,16 @@ export declare class DealsService {
         totalCollected: number;
         totalRemaining: number;
     }>;
+    getUpcomingPayments(orgId: Types.ObjectId, days?: number): Promise<{
+        dealId: string;
+        dealNumber: string;
+        clientName: string;
+        clientPhone: string;
+        date: Date;
+        amount: number;
+        daysUntil: number;
+        status: string;
+    }[]>;
     generatePaymentSchedule(startDate: Date, termMonths: number, monthlyPayment: number): ScheduledPayment[];
     private generateDealNumber;
 }
