@@ -7,4 +7,6 @@ export declare class QueryPaymentDto {
     dateFrom?: string;
     dateTo?: string;
     paymentMethod?: PaymentMethod;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
 }

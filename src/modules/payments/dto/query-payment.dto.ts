@@ -4,6 +4,8 @@ import {
   IsEnum,
   IsDateString,
   IsNumber,
+  IsIn,
+  IsString,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -41,4 +43,12 @@ export class QueryPaymentDto {
   @IsOptional()
   @IsEnum(PaymentMethod)
   paymentMethod?: PaymentMethod;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string = 'paymentDate';
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

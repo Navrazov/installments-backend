@@ -100,7 +100,7 @@ export class PaymentsService {
     orgId: Types.ObjectId,
     query: QueryPaymentDto,
   ): Promise<{ data: PaymentDocument[]; total: number; page: number; limit: number }> {
-    const { page = 1, limit = 20, dealId, clientId, dateFrom, dateTo, paymentMethod } = query;
+    const { page = 1, limit = 20, dealId, clientId, dateFrom, dateTo, paymentMethod, sortBy = 'paymentDate', sortOrder = 'desc' } = query;
 
     const filter: FilterQuery<PaymentDocument> = { organizationId: orgId };
 
@@ -124,11 +124,12 @@ export class PaymentsService {
     }
 
     const skip = (page - 1) * limit;
+    const sort: Record<string, 1 | -1> = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
 
     const [data, total] = await Promise.all([
       this.paymentModel
         .find(filter)
-        .sort({ createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .populate('dealId', 'dealNumber productDescription status')

@@ -72,7 +72,7 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.DIRECTOR)
+  @Roles(UserRole.CASHIER)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -155,7 +155,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/stats')
-  @Roles(UserRole.DIRECTOR)
+  @Roles(UserRole.CASHIER)
   async getStats(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,

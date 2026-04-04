@@ -78,7 +78,7 @@ let PaymentsService = class PaymentsService {
         return savedPayment;
     }
     async findAll(orgId, query) {
-        const { page = 1, limit = 20, dealId, clientId, dateFrom, dateTo, paymentMethod } = query;
+        const { page = 1, limit = 20, dealId, clientId, dateFrom, dateTo, paymentMethod, sortBy = 'paymentDate', sortOrder = 'desc' } = query;
         const filter = { organizationId: orgId };
         if (dealId) {
             filter.dealId = new mongoose_2.Types.ObjectId(dealId);
@@ -99,10 +99,11 @@ let PaymentsService = class PaymentsService {
             }
         }
         const skip = (page - 1) * limit;
+        const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
         const [data, total] = await Promise.all([
             this.paymentModel
                 .find(filter)
-                .sort({ createdAt: -1 })
+                .sort(sort)
                 .skip(skip)
                 .limit(limit)
                 .populate('dealId', 'dealNumber productDescription status')

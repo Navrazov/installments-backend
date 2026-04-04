@@ -123,7 +123,7 @@ __decorate([
 ], OrganizationsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -198,7 +198,7 @@ __decorate([
 ], OrganizationsController.prototype, "removeBranch", null);
 __decorate([
     (0, common_1.Get)(':id/stats'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),

@@ -1,8 +1,10 @@
 import {
   IsEnum,
+  IsIn,
   IsInt,
   IsMongoId,
   IsOptional,
+  IsString,
   Max,
   Min,
 } from 'class-validator';
@@ -42,4 +44,12 @@ export class QueryOverdueDto {
   @Min(0)
   @IsOptional()
   maxDays?: number;
+
+  @IsString()
+  @IsOptional()
+  sortBy?: string = 'overdueDays';
+
+  @IsIn(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

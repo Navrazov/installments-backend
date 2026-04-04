@@ -6,4 +6,6 @@ export declare class QueryOverdueDto {
     assignedTo?: string;
     minDays?: number;
     maxDays?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
 }

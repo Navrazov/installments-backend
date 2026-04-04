@@ -17,6 +17,8 @@ class QueryOverdueDto {
     constructor() {
         this.page = 1;
         this.limit = 20;
+        this.sortBy = 'overdueDays';
+        this.sortOrder = 'desc';
     }
 }
 exports.QueryOverdueDto = QueryOverdueDto;
@@ -59,4 +61,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], QueryOverdueDto.prototype, "maxDays", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryOverdueDto.prototype, "sortBy", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['asc', 'desc']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryOverdueDto.prototype, "sortOrder", void 0);
 //# sourceMappingURL=query-overdue.dto.js.map

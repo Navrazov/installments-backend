@@ -17,6 +17,8 @@ class QueryPaymentDto {
     constructor() {
         this.page = 1;
         this.limit = 20;
+        this.sortBy = 'paymentDate';
+        this.sortOrder = 'desc';
     }
 }
 exports.QueryPaymentDto = QueryPaymentDto;
@@ -59,4 +61,14 @@ __decorate([
     (0, class_validator_1.IsEnum)(payment_schema_1.PaymentMethod),
     __metadata("design:type", String)
 ], QueryPaymentDto.prototype, "paymentMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], QueryPaymentDto.prototype, "sortBy", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['asc', 'desc']),
+    __metadata("design:type", String)
+], QueryPaymentDto.prototype, "sortOrder", void 0);
 //# sourceMappingURL=query-payment.dto.js.map

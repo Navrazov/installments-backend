@@ -49,6 +49,9 @@ export class OverdueService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
+    const sortBy = query.sortBy ?? 'overdueDays';
+    const sortOrder = query.sortOrder ?? 'desc';
+    const sort: Record<string, 1 | -1> = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
 
     const [data, total] = await Promise.all([
       this.overdueModel
@@ -56,7 +59,7 @@ export class OverdueService {
         .populate('clientId', 'firstName lastName phone')
         .populate('dealId', 'dealNumber totalAmount remainingAmount')
         .populate('assignedTo', 'firstName lastName email')
-        .sort({ overdueDays: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .exec(),
