@@ -5,12 +5,15 @@ import { ClientDocument } from '../clients/schemas/client.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
 import { DealsService } from '../deals/deals.service';
+import { SmsService } from '../sms/sms.service';
 export declare class PaymentsService {
     private paymentModel;
     private dealModel;
     private clientModel;
     private readonly dealsService;
-    constructor(paymentModel: Model<PaymentDocument>, dealModel: Model<DealDocument>, clientModel: Model<ClientDocument>, dealsService: DealsService);
+    private readonly smsService;
+    private readonly logger;
+    constructor(paymentModel: Model<PaymentDocument>, dealModel: Model<DealDocument>, clientModel: Model<ClientDocument>, dealsService: DealsService, smsService: SmsService);
     create(orgId: Types.ObjectId, dto: CreatePaymentDto, userId: Types.ObjectId): Promise<PaymentDocument>;
     findAll(orgId: Types.ObjectId, query: QueryPaymentDto): Promise<{
         data: PaymentDocument[];

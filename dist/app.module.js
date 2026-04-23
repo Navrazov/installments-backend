@@ -24,7 +24,8 @@ const reputation_module_1 = require("./modules/reputation/reputation.module");
 const reports_module_1 = require("./modules/reports/reports.module");
 const exports_module_1 = require("./modules/exports/exports.module");
 const calculator_module_1 = require("./modules/calculator/calculator.module");
-const audit_module_1 = require("./modules/audit/audit.module");
+const contracts_module_1 = require("./modules/contracts/contracts.module");
+const sms_module_1 = require("./modules/sms/sms.module");
 const investors_module_1 = require("./modules/investors/investors.module");
 let AppModule = class AppModule {
 };
@@ -79,7 +80,8 @@ exports.AppModule = AppModule = __decorate([
             reports_module_1.ReportsModule,
             exports_module_1.ExportsModule,
             calculator_module_1.CalculatorModule,
-            audit_module_1.AuditModule,
+            contracts_module_1.ContractsModule,
+            sms_module_1.SmsModule,
             investors_module_1.InvestorsModule,
         ],
         providers: [

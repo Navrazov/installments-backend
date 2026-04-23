@@ -13,6 +13,8 @@ const deal_schema_1 = require("./schemas/deal.schema");
 const payment_schema_1 = require("../payments/schemas/payment.schema");
 const deals_service_1 = require("./deals.service");
 const deals_controller_1 = require("./deals.controller");
+const contracts_module_1 = require("../contracts/contracts.module");
+const sms_module_1 = require("../sms/sms.module");
 let DealsModule = class DealsModule {
 };
 exports.DealsModule = DealsModule;
@@ -23,6 +25,8 @@ exports.DealsModule = DealsModule = __decorate([
                 { name: deal_schema_1.Deal.name, schema: deal_schema_1.DealSchema },
                 { name: payment_schema_1.Payment.name, schema: payment_schema_1.PaymentSchema },
             ]),
+            (0, common_1.forwardRef)(() => contracts_module_1.ContractsModule),
+            (0, common_1.forwardRef)(() => sms_module_1.SmsModule),
         ],
         controllers: [deals_controller_1.DealsController],
         providers: [deals_service_1.DealsService],

@@ -2,20 +2,31 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
 import { Deal, DealDocument, DealStatus, PaymentScheduleStatus, ScheduledPayment } from './schemas/deal.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
-import { CreateDealDto } from './dto/create-deal.dto';
+import { CreateDealDto, RoundingMode } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 import { QueryDealDto } from './dto/query-deal.dto';
+import { ContractsService } from '../contracts/contracts.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class DealsService {
+  private readonly logger = new Logger(DealsService.name);
+
   constructor(
     @InjectModel(Deal.name) private dealModel: Model<DealDocument>,
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
+    @Inject(forwardRef(() => ContractsService))
+    private readonly contractsService: ContractsService,
+    @Inject(forwardRef(() => SmsService))
+    private readonly smsService: SmsService,
   ) {}
 
   async create(
@@ -25,55 +36,94 @@ export class DealsService {
   ): Promise<DealDocument> {
     const dealNumber = await this.generateDealNumber();
 
+    const purchasePrice = dto.purchasePrice ?? 0;
     const totalAmount = dto.salePrice;
+    const markup = Math.max(0, dto.salePrice - purchasePrice);
+    const markupPercent = purchasePrice > 0 ? (markup / purchasePrice) * 100 : 0;
+
     const remainingAmount = totalAmount - dto.downPayment;
-    const monthlyPayment = remainingAmount / dto.termMonths;
+    const rawMonthlyPayment = remainingAmount / dto.termMonths;
+    const monthlyPayment = this.applyRounding(rawMonthlyPayment, dto.roundingMode);
 
     const startDate = new Date(dto.startDate);
+    const firstPaymentDate = dto.firstPaymentDate
+      ? new Date(dto.firstPaymentDate)
+      : (() => {
+          const d = new Date(startDate);
+          d.setMonth(d.getMonth() + 1);
+          return d;
+        })();
+
     const paymentSchedule = this.generatePaymentSchedule(
-      startDate,
+      firstPaymentDate,
       dto.termMonths,
       monthlyPayment,
+      remainingAmount,
     );
 
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + dto.termMonths);
+    const endDate = new Date(firstPaymentDate);
+    endDate.setMonth(endDate.getMonth() + dto.termMonths - 1);
 
     const deal = new this.dealModel({
       organizationId: orgId,
       clientId: new Types.ObjectId(dto.clientId),
       dealNumber,
       productDescription: dto.productDescription,
-      purchasePrice: dto.purchasePrice,
+      purchasePrice,
       salePrice: dto.salePrice,
-      markup: dto.markup,
-      markupPercent: dto.markupPercent,
+      markup: Math.round(markup * 100) / 100,
+      markupPercent: Math.round(markupPercent * 100) / 100,
       downPayment: dto.downPayment,
       totalAmount,
       remainingAmount,
       termMonths: dto.termMonths,
-      monthlyPayment: Math.round(monthlyPayment * 100) / 100,
+      monthlyPayment,
       startDate,
+      firstPaymentDate,
       endDate,
       paymentSchedule,
       status: DealStatus.ACTIVE,
-      branchName: dto.branchName || null,
-      managerId: new Types.ObjectId(dto.managerId),
-      guarantorId: dto.guarantorId
-        ? new Types.ObjectId(dto.guarantorId)
-        : undefined,
+      managerId: userId,
       comments: dto.comments || null,
       createdBy: userId,
     });
 
-    return deal.save();
+    const saved = await deal.save();
+
+    try {
+      await this.contractsService.createFromDeal(orgId, saved._id);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to auto-generate contract for deal ${saved._id}: ${(err as Error).message}`,
+      );
+    }
+
+    try {
+      await this.smsService.notifyDealCreated(orgId, saved);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send SMS notification for deal ${saved._id}: ${(err as Error).message}`,
+      );
+    }
+
+    return saved;
+  }
+
+  private applyRounding(value: number, mode?: RoundingMode): number {
+    if (mode === RoundingMode.UP) {
+      return Math.ceil(value / 100) * 100;
+    }
+    if (mode === RoundingMode.DOWN) {
+      return Math.floor(value / 100) * 100;
+    }
+    return Math.round(value * 100) / 100;
   }
 
   async findAll(
     orgId: Types.ObjectId,
     query: QueryDealDto,
   ): Promise<{ data: DealDocument[]; total: number; page: number; limit: number }> {
-    const { page = 1, limit = 20, status, clientId, managerId, branchName, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const { page = 1, limit = 20, status, clientId, managerId, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
     const filter: FilterQuery<DealDocument> = { organizationId: orgId };
 
@@ -85,9 +135,6 @@ export class DealsService {
     }
     if (managerId) {
       filter.managerId = new Types.ObjectId(managerId);
-    }
-    if (branchName) {
-      filter.branchName = branchName;
     }
     if (startDateFrom || startDateTo) {
       filter.startDate = {};
@@ -157,44 +204,50 @@ export class DealsService {
     if (dto.managerId) {
       updateData.managerId = new Types.ObjectId(dto.managerId);
     }
-    if (dto.guarantorId) {
-      updateData.guarantorId = new Types.ObjectId(dto.guarantorId);
-    }
 
     // Recalculate financial fields if relevant fields changed
     const needsRecalc =
       dto.salePrice !== undefined ||
       dto.downPayment !== undefined ||
       dto.termMonths !== undefined ||
-      dto.startDate !== undefined;
+      dto.startDate !== undefined ||
+      dto.firstPaymentDate !== undefined;
 
     if (needsRecalc) {
       const salePrice = dto.salePrice ?? deal.salePrice;
       const downPayment = dto.downPayment ?? deal.downPayment;
       const termMonths = dto.termMonths ?? deal.termMonths;
       const startDate = dto.startDate ? new Date(dto.startDate) : deal.startDate;
+      const firstPaymentDate = dto.firstPaymentDate
+        ? new Date(dto.firstPaymentDate)
+        : deal.firstPaymentDate ?? (() => {
+            const d = new Date(startDate);
+            d.setMonth(d.getMonth() + 1);
+            return d;
+          })();
 
       const totalAmount = salePrice;
       const remainingAmountBase = totalAmount - downPayment;
       const monthlyPayment = remainingAmountBase / termMonths;
 
-      // Calculate how much has already been paid
       const totalPaid = totalAmount - deal.remainingAmount - deal.downPayment;
       const newRemaining = remainingAmountBase - totalPaid;
 
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + termMonths);
+      const endDate = new Date(firstPaymentDate);
+      endDate.setMonth(endDate.getMonth() + termMonths - 1);
 
       const paymentSchedule = this.generatePaymentSchedule(
-        startDate,
+        firstPaymentDate,
         termMonths,
         monthlyPayment,
+        remainingAmountBase,
       );
 
       updateData.totalAmount = totalAmount;
       updateData.remainingAmount = Math.max(0, newRemaining);
       updateData.monthlyPayment = Math.round(monthlyPayment * 100) / 100;
       updateData.startDate = startDate;
+      updateData.firstPaymentDate = firstPaymentDate;
       updateData.endDate = endDate;
       updateData.paymentSchedule = paymentSchedule;
     }
@@ -333,6 +386,13 @@ export class DealsService {
         deal.status = DealStatus.OVERDUE;
         deal.markModified('paymentSchedule');
         await deal.save();
+        try {
+          await this.smsService.notifyOverdue(deal.organizationId, deal);
+        } catch (err) {
+          this.logger.warn(
+            `Failed to send overdue SMS for deal ${deal._id}: ${(err as Error).message}`,
+          );
+        }
       }
     }
   }
@@ -471,15 +531,16 @@ export class DealsService {
   }
 
   generatePaymentSchedule(
-    startDate: Date,
+    firstPaymentDate: Date,
     termMonths: number,
     monthlyPayment: number,
+    remainingAmount?: number,
   ): ScheduledPayment[] {
     const schedule: ScheduledPayment[] = [];
     const roundedPayment = Math.round(monthlyPayment * 100) / 100;
 
-    for (let i = 1; i <= termMonths; i++) {
-      const paymentDate = new Date(startDate);
+    for (let i = 0; i < termMonths; i++) {
+      const paymentDate = new Date(firstPaymentDate);
       paymentDate.setMonth(paymentDate.getMonth() + i);
 
       schedule.push({
@@ -487,6 +548,15 @@ export class DealsService {
         amount: roundedPayment,
         status: PaymentScheduleStatus.PENDING,
       });
+    }
+
+    if (remainingAmount !== undefined && schedule.length > 0) {
+      const totalScheduled = roundedPayment * termMonths;
+      const diff = Math.round((remainingAmount - totalScheduled) * 100) / 100;
+      if (diff !== 0) {
+        const last = schedule[schedule.length - 1];
+        last.amount = Math.max(0, Math.round((last.amount + diff) * 100) / 100);
+      }
     }
 
     return schedule;

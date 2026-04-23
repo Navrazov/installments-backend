@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
@@ -11,14 +12,18 @@ import { Client, ClientDocument } from '../clients/schemas/client.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
 import { DealsService } from '../deals/deals.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(Deal.name) private dealModel: Model<DealDocument>,
     @InjectModel(Client.name) private clientModel: Model<ClientDocument>,
     private readonly dealsService: DealsService,
+    private readonly smsService: SmsService,
   ) {}
 
   async create(
@@ -92,6 +97,14 @@ export class PaymentsService {
 
     // Recalculate full schedule statuses based on all payments
     await this.dealsService.updatePaymentScheduleStatus(deal._id);
+
+    try {
+      await this.smsService.notifyPayment(orgId, deal, savedPayment);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send payment SMS for deal ${deal._id}: ${(err as Error).message}`,
+      );
+    }
 
     return savedPayment;
   }

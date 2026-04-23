@@ -15,7 +15,8 @@ import { ReputationModule } from './modules/reputation/reputation.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { CalculatorModule } from './modules/calculator/calculator.module';
-import { AuditModule } from './modules/audit/audit.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
+import { SmsModule } from './modules/sms/sms.module';
 import { InvestorsModule } from './modules/investors/investors.module';
 
 @Module({
@@ -70,7 +71,8 @@ import { InvestorsModule } from './modules/investors/investors.module';
     ReportsModule,
     ExportsModule,
     CalculatorModule,
-    AuditModule,
+    ContractsModule,
+    SmsModule,
     InvestorsModule,
   ],
   providers: [

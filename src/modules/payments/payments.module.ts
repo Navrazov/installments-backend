@@ -6,6 +6,7 @@ import { Client, ClientSchema } from '../clients/schemas/client.schema';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { DealsModule } from '../deals/deals.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DealsModule } from '../deals/deals.module';
       { name: Client.name, schema: ClientSchema },
     ]),
     DealsModule,
+    SmsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

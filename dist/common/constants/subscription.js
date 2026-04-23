@@ -29,7 +29,6 @@ const PRO_FEATURES = [
     'exports_excel',
     'guarantors',
     'reputation_basic',
-    'audit_logs',
 ];
 const PREMIUM_FEATURES = [
     ...PRO_FEATURES,

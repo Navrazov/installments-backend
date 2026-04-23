@@ -242,7 +242,7 @@ export class InvestorsService {
 
   // ─── Helper: enrich investment with computed returns ───────────────────────
 
-  private enrichInvestment(inv: InvestmentDocument & { dealId?: any }) {
+  private enrichInvestment(inv: any) {
     const deal: DealDocument | null = inv.dealId as any;
     const markup = deal?.markup ?? 0;
     const totalAmount = deal?.totalAmount ?? 0;

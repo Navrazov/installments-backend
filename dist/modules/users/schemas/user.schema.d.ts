@@ -16,6 +16,8 @@ export declare class User {
     lastName: string;
     role: UserRole;
     organizationId?: Types.ObjectId;
+    branchId?: Types.ObjectId;
+    phone: string | null;
     isActive: boolean;
     lastLoginAt: Date | null;
     invitedBy?: Types.ObjectId;

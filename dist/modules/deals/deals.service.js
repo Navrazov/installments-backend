@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var DealsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DealsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,50 +19,86 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const deal_schema_1 = require("./schemas/deal.schema");
 const payment_schema_1 = require("../payments/schemas/payment.schema");
-let DealsService = class DealsService {
-    constructor(dealModel, paymentModel) {
+const create_deal_dto_1 = require("./dto/create-deal.dto");
+const contracts_service_1 = require("../contracts/contracts.service");
+const sms_service_1 = require("../sms/sms.service");
+let DealsService = DealsService_1 = class DealsService {
+    constructor(dealModel, paymentModel, contractsService, smsService) {
         this.dealModel = dealModel;
         this.paymentModel = paymentModel;
+        this.contractsService = contractsService;
+        this.smsService = smsService;
+        this.logger = new common_1.Logger(DealsService_1.name);
     }
     async create(orgId, dto, userId) {
         const dealNumber = await this.generateDealNumber();
+        const purchasePrice = dto.purchasePrice ?? 0;
         const totalAmount = dto.salePrice;
+        const markup = Math.max(0, dto.salePrice - purchasePrice);
+        const markupPercent = purchasePrice > 0 ? (markup / purchasePrice) * 100 : 0;
         const remainingAmount = totalAmount - dto.downPayment;
-        const monthlyPayment = remainingAmount / dto.termMonths;
+        const rawMonthlyPayment = remainingAmount / dto.termMonths;
+        const monthlyPayment = this.applyRounding(rawMonthlyPayment, dto.roundingMode);
         const startDate = new Date(dto.startDate);
-        const paymentSchedule = this.generatePaymentSchedule(startDate, dto.termMonths, monthlyPayment);
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + dto.termMonths);
+        const firstPaymentDate = dto.firstPaymentDate
+            ? new Date(dto.firstPaymentDate)
+            : (() => {
+                const d = new Date(startDate);
+                d.setMonth(d.getMonth() + 1);
+                return d;
+            })();
+        const paymentSchedule = this.generatePaymentSchedule(firstPaymentDate, dto.termMonths, monthlyPayment, remainingAmount);
+        const endDate = new Date(firstPaymentDate);
+        endDate.setMonth(endDate.getMonth() + dto.termMonths - 1);
         const deal = new this.dealModel({
             organizationId: orgId,
             clientId: new mongoose_2.Types.ObjectId(dto.clientId),
             dealNumber,
             productDescription: dto.productDescription,
-            purchasePrice: dto.purchasePrice,
+            purchasePrice,
             salePrice: dto.salePrice,
-            markup: dto.markup,
-            markupPercent: dto.markupPercent,
+            markup: Math.round(markup * 100) / 100,
+            markupPercent: Math.round(markupPercent * 100) / 100,
             downPayment: dto.downPayment,
             totalAmount,
             remainingAmount,
             termMonths: dto.termMonths,
-            monthlyPayment: Math.round(monthlyPayment * 100) / 100,
+            monthlyPayment,
             startDate,
+            firstPaymentDate,
             endDate,
             paymentSchedule,
             status: deal_schema_1.DealStatus.ACTIVE,
-            branchName: dto.branchName || null,
-            managerId: new mongoose_2.Types.ObjectId(dto.managerId),
-            guarantorId: dto.guarantorId
-                ? new mongoose_2.Types.ObjectId(dto.guarantorId)
-                : undefined,
+            managerId: userId,
             comments: dto.comments || null,
             createdBy: userId,
         });
-        return deal.save();
+        const saved = await deal.save();
+        try {
+            await this.contractsService.createFromDeal(orgId, saved._id);
+        }
+        catch (err) {
+            this.logger.warn(`Failed to auto-generate contract for deal ${saved._id}: ${err.message}`);
+        }
+        try {
+            await this.smsService.notifyDealCreated(orgId, saved);
+        }
+        catch (err) {
+            this.logger.warn(`Failed to send SMS notification for deal ${saved._id}: ${err.message}`);
+        }
+        return saved;
+    }
+    applyRounding(value, mode) {
+        if (mode === create_deal_dto_1.RoundingMode.UP) {
+            return Math.ceil(value / 100) * 100;
+        }
+        if (mode === create_deal_dto_1.RoundingMode.DOWN) {
+            return Math.floor(value / 100) * 100;
+        }
+        return Math.round(value * 100) / 100;
     }
     async findAll(orgId, query) {
-        const { page = 1, limit = 20, status, clientId, managerId, branchName, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+        const { page = 1, limit = 20, status, clientId, managerId, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
         const filter = { organizationId: orgId };
         if (status) {
             filter.status = status;
@@ -71,9 +108,6 @@ let DealsService = class DealsService {
         }
         if (managerId) {
             filter.managerId = new mongoose_2.Types.ObjectId(managerId);
-        }
-        if (branchName) {
-            filter.branchName = branchName;
         }
         if (startDateFrom || startDateTo) {
             filter.startDate = {};
@@ -125,30 +159,36 @@ let DealsService = class DealsService {
         if (dto.managerId) {
             updateData.managerId = new mongoose_2.Types.ObjectId(dto.managerId);
         }
-        if (dto.guarantorId) {
-            updateData.guarantorId = new mongoose_2.Types.ObjectId(dto.guarantorId);
-        }
         const needsRecalc = dto.salePrice !== undefined ||
             dto.downPayment !== undefined ||
             dto.termMonths !== undefined ||
-            dto.startDate !== undefined;
+            dto.startDate !== undefined ||
+            dto.firstPaymentDate !== undefined;
         if (needsRecalc) {
             const salePrice = dto.salePrice ?? deal.salePrice;
             const downPayment = dto.downPayment ?? deal.downPayment;
             const termMonths = dto.termMonths ?? deal.termMonths;
             const startDate = dto.startDate ? new Date(dto.startDate) : deal.startDate;
+            const firstPaymentDate = dto.firstPaymentDate
+                ? new Date(dto.firstPaymentDate)
+                : deal.firstPaymentDate ?? (() => {
+                    const d = new Date(startDate);
+                    d.setMonth(d.getMonth() + 1);
+                    return d;
+                })();
             const totalAmount = salePrice;
             const remainingAmountBase = totalAmount - downPayment;
             const monthlyPayment = remainingAmountBase / termMonths;
             const totalPaid = totalAmount - deal.remainingAmount - deal.downPayment;
             const newRemaining = remainingAmountBase - totalPaid;
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + termMonths);
-            const paymentSchedule = this.generatePaymentSchedule(startDate, termMonths, monthlyPayment);
+            const endDate = new Date(firstPaymentDate);
+            endDate.setMonth(endDate.getMonth() + termMonths - 1);
+            const paymentSchedule = this.generatePaymentSchedule(firstPaymentDate, termMonths, monthlyPayment, remainingAmountBase);
             updateData.totalAmount = totalAmount;
             updateData.remainingAmount = Math.max(0, newRemaining);
             updateData.monthlyPayment = Math.round(monthlyPayment * 100) / 100;
             updateData.startDate = startDate;
+            updateData.firstPaymentDate = firstPaymentDate;
             updateData.endDate = endDate;
             updateData.paymentSchedule = paymentSchedule;
         }
@@ -249,6 +289,12 @@ let DealsService = class DealsService {
                 deal.status = deal_schema_1.DealStatus.OVERDUE;
                 deal.markModified('paymentSchedule');
                 await deal.save();
+                try {
+                    await this.smsService.notifyOverdue(deal.organizationId, deal);
+                }
+                catch (err) {
+                    this.logger.warn(`Failed to send overdue SMS for deal ${deal._id}: ${err.message}`);
+                }
             }
         }
     }
@@ -335,17 +381,25 @@ let DealsService = class DealsService {
         }
         return result.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 30);
     }
-    generatePaymentSchedule(startDate, termMonths, monthlyPayment) {
+    generatePaymentSchedule(firstPaymentDate, termMonths, monthlyPayment, remainingAmount) {
         const schedule = [];
         const roundedPayment = Math.round(monthlyPayment * 100) / 100;
-        for (let i = 1; i <= termMonths; i++) {
-            const paymentDate = new Date(startDate);
+        for (let i = 0; i < termMonths; i++) {
+            const paymentDate = new Date(firstPaymentDate);
             paymentDate.setMonth(paymentDate.getMonth() + i);
             schedule.push({
                 date: paymentDate,
                 amount: roundedPayment,
                 status: deal_schema_1.PaymentScheduleStatus.PENDING,
             });
+        }
+        if (remainingAmount !== undefined && schedule.length > 0) {
+            const totalScheduled = roundedPayment * termMonths;
+            const diff = Math.round((remainingAmount - totalScheduled) * 100) / 100;
+            if (diff !== 0) {
+                const last = schedule[schedule.length - 1];
+                last.amount = Math.max(0, Math.round((last.amount + diff) * 100) / 100);
+            }
         }
         return schedule;
     }
@@ -373,11 +427,15 @@ let DealsService = class DealsService {
     }
 };
 exports.DealsService = DealsService;
-exports.DealsService = DealsService = __decorate([
+exports.DealsService = DealsService = DealsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(deal_schema_1.Deal.name)),
     __param(1, (0, mongoose_1.InjectModel)(payment_schema_1.Payment.name)),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => contracts_service_1.ContractsService))),
+    __param(3, (0, common_1.Inject)((0, common_1.forwardRef)(() => sms_service_1.SmsService))),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model])
+        mongoose_2.Model,
+        contracts_service_1.ContractsService,
+        sms_service_1.SmsService])
 ], DealsService);
 //# sourceMappingURL=deals.service.js.map

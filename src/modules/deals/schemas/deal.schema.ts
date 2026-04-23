@@ -73,6 +73,9 @@ export class Deal {
   startDate: Date;
 
   @Prop({ type: Date, required: true })
+  firstPaymentDate: Date;
+
+  @Prop({ type: Date, required: true })
   endDate: Date;
 
   @Prop({

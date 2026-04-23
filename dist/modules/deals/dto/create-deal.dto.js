@@ -9,9 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateDealDto = void 0;
+exports.CreateDealDto = exports.RoundingMode = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+var RoundingMode;
+(function (RoundingMode) {
+    RoundingMode["NONE"] = "none";
+    RoundingMode["UP"] = "up";
+    RoundingMode["DOWN"] = "down";
+})(RoundingMode || (exports.RoundingMode = RoundingMode = {}));
 class CreateDealDto {
 }
 exports.CreateDealDto = CreateDealDto;
@@ -25,6 +31,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateDealDto.prototype, "productDescription", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0),
     (0, class_transformer_1.Type)(() => Number),
@@ -36,18 +43,6 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateDealDto.prototype, "salePrice", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], CreateDealDto.prototype, "markup", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], CreateDealDto.prototype, "markupPercent", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0),
@@ -66,18 +61,14 @@ __decorate([
 ], CreateDealDto.prototype, "startDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateDealDto.prototype, "branchName", void 0);
-__decorate([
-    (0, class_validator_1.IsMongoId)(),
-    __metadata("design:type", String)
-], CreateDealDto.prototype, "managerId", void 0);
+], CreateDealDto.prototype, "firstPaymentDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsMongoId)(),
+    (0, class_validator_1.IsEnum)(RoundingMode),
     __metadata("design:type", String)
-], CreateDealDto.prototype, "guarantorId", void 0);
+], CreateDealDto.prototype, "roundingMode", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

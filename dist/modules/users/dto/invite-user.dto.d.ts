@@ -5,4 +5,6 @@ export declare class InviteUserDto {
     lastName: string;
     role: UserRole;
     organizationId?: string;
+    branchId?: string;
+    phone?: string;
 }

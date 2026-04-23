@@ -4,11 +4,17 @@ import { PaymentDocument } from '../payments/schemas/payment.schema';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 import { QueryDealDto } from './dto/query-deal.dto';
+import { ContractsService } from '../contracts/contracts.service';
+import { SmsService } from '../sms/sms.service';
 export declare class DealsService {
     private dealModel;
     private paymentModel;
-    constructor(dealModel: Model<DealDocument>, paymentModel: Model<PaymentDocument>);
+    private readonly contractsService;
+    private readonly smsService;
+    private readonly logger;
+    constructor(dealModel: Model<DealDocument>, paymentModel: Model<PaymentDocument>, contractsService: ContractsService, smsService: SmsService);
     create(orgId: Types.ObjectId, dto: CreateDealDto, userId: Types.ObjectId): Promise<DealDocument>;
+    private applyRounding;
     findAll(orgId: Types.ObjectId, query: QueryDealDto): Promise<{
         data: DealDocument[];
         total: number;
@@ -42,6 +48,6 @@ export declare class DealsService {
         daysUntil: number;
         status: string;
     }[]>;
-    generatePaymentSchedule(startDate: Date, termMonths: number, monthlyPayment: number): ScheduledPayment[];
+    generatePaymentSchedule(firstPaymentDate: Date, termMonths: number, monthlyPayment: number, remainingAmount?: number): ScheduledPayment[];
     private generateDealNumber;
 }

@@ -15,6 +15,7 @@ const client_schema_1 = require("../clients/schemas/client.schema");
 const payments_service_1 = require("./payments.service");
 const payments_controller_1 = require("./payments.controller");
 const deals_module_1 = require("../deals/deals.module");
+const sms_module_1 = require("../sms/sms.module");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -27,6 +28,7 @@ exports.PaymentsModule = PaymentsModule = __decorate([
                 { name: client_schema_1.Client.name, schema: client_schema_1.ClientSchema },
             ]),
             deals_module_1.DealsModule,
+            sms_module_1.SmsModule,
         ],
         controllers: [payments_controller_1.PaymentsController],
         providers: [payments_service_1.PaymentsService],

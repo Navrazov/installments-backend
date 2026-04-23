@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PaymentsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -20,12 +21,15 @@ const payment_schema_1 = require("./schemas/payment.schema");
 const deal_schema_1 = require("../deals/schemas/deal.schema");
 const client_schema_1 = require("../clients/schemas/client.schema");
 const deals_service_1 = require("../deals/deals.service");
-let PaymentsService = class PaymentsService {
-    constructor(paymentModel, dealModel, clientModel, dealsService) {
+const sms_service_1 = require("../sms/sms.service");
+let PaymentsService = PaymentsService_1 = class PaymentsService {
+    constructor(paymentModel, dealModel, clientModel, dealsService, smsService) {
         this.paymentModel = paymentModel;
         this.dealModel = dealModel;
         this.clientModel = clientModel;
         this.dealsService = dealsService;
+        this.smsService = smsService;
+        this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async create(orgId, dto, userId) {
         const deal = await this.dealModel
@@ -75,6 +79,12 @@ let PaymentsService = class PaymentsService {
         deal.markModified('paymentSchedule');
         await deal.save();
         await this.dealsService.updatePaymentScheduleStatus(deal._id);
+        try {
+            await this.smsService.notifyPayment(orgId, deal, savedPayment);
+        }
+        catch (err) {
+            this.logger.warn(`Failed to send payment SMS for deal ${deal._id}: ${err.message}`);
+        }
         return savedPayment;
     }
     async findAll(orgId, query) {
@@ -292,7 +302,7 @@ let PaymentsService = class PaymentsService {
     }
 };
 exports.PaymentsService = PaymentsService;
-exports.PaymentsService = PaymentsService = __decorate([
+exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(payment_schema_1.Payment.name)),
     __param(1, (0, mongoose_1.InjectModel)(deal_schema_1.Deal.name)),
@@ -300,6 +310,7 @@ exports.PaymentsService = PaymentsService = __decorate([
     __metadata("design:paramtypes", [mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model,
-        deals_service_1.DealsService])
+        deals_service_1.DealsService,
+        sms_service_1.SmsService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

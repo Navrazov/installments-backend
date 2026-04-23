@@ -6,4 +6,6 @@ export declare class UpdateUserDto {
     lastName?: string;
     role?: UserRole;
     organizationId?: string;
+    branchId?: string;
+    phone?: string;
 }

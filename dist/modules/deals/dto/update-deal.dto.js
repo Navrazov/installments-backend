@@ -40,20 +40,6 @@ __decorate([
     (0, class_validator_1.Min)(0),
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
-], UpdateDealDto.prototype, "markup", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
-], UpdateDealDto.prototype, "markupPercent", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_transformer_1.Type)(() => Number),
-    __metadata("design:type", Number)
 ], UpdateDealDto.prototype, "downPayment", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
@@ -69,19 +55,14 @@ __decorate([
 ], UpdateDealDto.prototype, "startDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], UpdateDealDto.prototype, "branchName", void 0);
+], UpdateDealDto.prototype, "firstPaymentDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsMongoId)(),
     __metadata("design:type", String)
 ], UpdateDealDto.prototype, "managerId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsMongoId)(),
-    __metadata("design:type", String)
-], UpdateDealDto.prototype, "guarantorId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

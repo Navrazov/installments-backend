@@ -1,15 +1,17 @@
+export declare enum RoundingMode {
+    NONE = "none",
+    UP = "up",
+    DOWN = "down"
+}
 export declare class CreateDealDto {
     clientId: string;
     productDescription: string;
-    purchasePrice: number;
+    purchasePrice?: number;
     salePrice: number;
-    markup: number;
-    markupPercent: number;
     downPayment: number;
     termMonths: number;
     startDate: string;
-    branchName?: string;
-    managerId: string;
-    guarantorId?: string;
+    firstPaymentDate?: string;
+    roundingMode?: RoundingMode;
     comments?: string;
 }

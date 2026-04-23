@@ -5,7 +5,6 @@ export declare class QueryDealDto {
     status?: DealStatus;
     clientId?: string;
     managerId?: string;
-    branchName?: string;
     startDateFrom?: string;
     startDateTo?: string;
     sortBy?: string;

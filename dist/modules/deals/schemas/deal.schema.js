@@ -96,6 +96,10 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ type: Date, required: true }),
     __metadata("design:type", Date)
+], Deal.prototype, "firstPaymentDate", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Date, required: true }),
+    __metadata("design:type", Date)
 ], Deal.prototype, "endDate", void 0);
 __decorate([
     (0, mongoose_1.Prop)({

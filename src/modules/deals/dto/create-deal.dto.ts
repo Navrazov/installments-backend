@@ -4,10 +4,17 @@ import {
   IsOptional,
   IsDateString,
   IsMongoId,
+  IsEnum,
   Min,
   MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export enum RoundingMode {
+  NONE = 'none',
+  UP = 'up',
+  DOWN = 'down',
+}
 
 export class CreateDealDto {
   @IsMongoId()
@@ -17,25 +24,16 @@ export class CreateDealDto {
   @MinLength(1)
   productDescription: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  purchasePrice: number;
+  purchasePrice?: number;
 
   @IsNumber()
   @Min(0)
   @Type(() => Number)
   salePrice: number;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  markup: number;
-
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  markupPercent: number;
 
   @IsNumber()
   @Min(0)
@@ -51,15 +49,12 @@ export class CreateDealDto {
   startDate: string;
 
   @IsOptional()
-  @IsString()
-  branchName?: string;
-
-  @IsMongoId()
-  managerId: string;
+  @IsDateString()
+  firstPaymentDate?: string;
 
   @IsOptional()
-  @IsMongoId()
-  guarantorId?: string;
+  @IsEnum(RoundingMode)
+  roundingMode?: RoundingMode;
 
   @IsOptional()
   @IsString()

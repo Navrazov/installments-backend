@@ -28,4 +28,12 @@ export class InviteUserDto {
   @IsMongoId()
   @IsOptional()
   organizationId?: string;
+
+  @IsMongoId()
+  @IsOptional()
+  branchId?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

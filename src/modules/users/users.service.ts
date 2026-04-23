@@ -10,6 +10,10 @@ import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 
 import { User, UserDocument } from './schemas/user.schema';
+import {
+  Organization,
+  OrganizationDocument,
+} from '../organizations/schemas/organization.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
@@ -19,6 +23,8 @@ import { UserRole } from '../../common/constants/roles';
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Organization.name)
+    private readonly organizationModel: Model<OrganizationDocument>,
   ) {}
 
   async findById(id: string): Promise<UserDocument> {
@@ -143,6 +149,14 @@ export class UsersService {
     if (dto.organizationId) {
       updateData.organizationId = new Types.ObjectId(dto.organizationId);
     }
+    if (dto.branchId !== undefined) {
+      updateData.branchId = dto.branchId
+        ? new Types.ObjectId(dto.branchId)
+        : null;
+    }
+    if (dto.phone !== undefined) {
+      updateData.phone = dto.phone || null;
+    }
 
     const user = await this.userModel
       .findByIdAndUpdate(id, { $set: updateData }, { new: true })
@@ -199,6 +213,28 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
+    if (dto.branchId) {
+      if (!dto.organizationId) {
+        throw new BadRequestException(
+          'branchId requires organizationId',
+        );
+      }
+      const org = await this.organizationModel
+        .findById(dto.organizationId)
+        .exec();
+      if (!org) {
+        throw new NotFoundException('Organization not found');
+      }
+      const branchExists = org.branches.some(
+        (b: any) => b._id?.toString() === dto.branchId,
+      );
+      if (!branchExists) {
+        throw new BadRequestException(
+          'Branch not found in this organization',
+        );
+      }
+    }
+
     const tempPassword = randomUUID().slice(0, 12);
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -211,6 +247,8 @@ export class UsersService {
       organizationId: dto.organizationId
         ? new Types.ObjectId(dto.organizationId)
         : undefined,
+      branchId: dto.branchId ? new Types.ObjectId(dto.branchId) : undefined,
+      phone: dto.phone ?? null,
       invitedBy: new Types.ObjectId(invitedBy),
       isActive: true,
     });

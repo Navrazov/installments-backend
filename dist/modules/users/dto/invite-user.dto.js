@@ -40,4 +40,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], InviteUserDto.prototype, "organizationId", void 0);
+__decorate([
+    (0, class_validator_1.IsMongoId)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteUserDto.prototype, "branchId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteUserDto.prototype, "phone", void 0);
 //# sourceMappingURL=invite-user.dto.js.map

@@ -66,6 +66,14 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], User.prototype, "organizationId", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, required: false, index: true }),
+    __metadata("design:type", mongoose_2.Types.ObjectId)
+], User.prototype, "branchId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String, trim: true, default: null }),
+    __metadata("design:type", Object)
+], User.prototype, "phone", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ default: true, index: true }),
     __metadata("design:type", Boolean)
 ], User.prototype, "isActive", void 0);
@@ -87,4 +95,5 @@ exports.User = User = __decorate([
 exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);
 exports.UserSchema.index({ organizationId: 1, role: 1 });
 exports.UserSchema.index({ organizationId: 1, isActive: 1 });
+exports.UserSchema.index({ organizationId: 1, branchId: 1 });
 //# sourceMappingURL=user.schema.js.map

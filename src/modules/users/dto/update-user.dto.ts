@@ -33,4 +33,12 @@ export class UpdateUserDto {
   @IsMongoId()
   @IsOptional()
   organizationId?: string;
+
+  @IsMongoId()
+  @IsOptional()
+  branchId?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

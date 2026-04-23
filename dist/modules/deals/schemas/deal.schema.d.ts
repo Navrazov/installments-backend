@@ -32,6 +32,7 @@ export declare class Deal {
     termMonths: number;
     monthlyPayment: number;
     startDate: Date;
+    firstPaymentDate: Date;
     endDate: Date;
     paymentSchedule: ScheduledPayment[];
     status: DealStatus;

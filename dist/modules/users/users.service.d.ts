@@ -1,12 +1,14 @@
 import { Model } from 'mongoose';
 import { UserDocument } from './schemas/user.schema';
+import { OrganizationDocument } from '../organizations/schemas/organization.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UserRole } from '../../common/constants/roles';
 export declare class UsersService {
     private readonly userModel;
-    constructor(userModel: Model<UserDocument>);
+    private readonly organizationModel;
+    constructor(userModel: Model<UserDocument>, organizationModel: Model<OrganizationDocument>);
     findById(id: string): Promise<UserDocument>;
     findByEmail(email: string): Promise<UserDocument | null>;
     findAll(orgId?: string, filters?: {

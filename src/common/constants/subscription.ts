@@ -26,7 +26,6 @@ export type Feature =
   | 'reputation_full'
   | 'calculator'
   | 'multi_branch'
-  | 'audit_logs'
   | 'analytics_advanced'
   | 'roles_management';
 
@@ -52,7 +51,6 @@ const PRO_FEATURES: Feature[] = [
   'exports_excel',
   'guarantors',
   'reputation_basic',
-  'audit_logs',
 ];
 
 const PREMIUM_FEATURES: Feature[] = [

@@ -49,6 +49,12 @@ export class User {
   })
   organizationId?: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, required: false, index: true })
+  branchId?: Types.ObjectId;
+
+  @Prop({ type: String, trim: true, default: null })
+  phone: string | null;
+
   @Prop({ default: true, index: true })
   isActive: boolean;
 
@@ -66,3 +72,4 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.index({ organizationId: 1, role: 1 });
 UserSchema.index({ organizationId: 1, isActive: 1 });
+UserSchema.index({ organizationId: 1, branchId: 1 });

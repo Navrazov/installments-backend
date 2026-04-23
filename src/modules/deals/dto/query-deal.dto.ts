@@ -36,10 +36,6 @@ export class QueryDealDto {
   managerId?: string;
 
   @IsOptional()
-  @IsString()
-  branchName?: string;
-
-  @IsOptional()
   @IsDateString()
   startDateFrom?: string;
 

@@ -29,18 +29,6 @@ export class UpdateDealDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  markup?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  markupPercent?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
   downPayment?: number;
 
   @IsOptional()
@@ -54,16 +42,12 @@ export class UpdateDealDto {
   startDate?: string;
 
   @IsOptional()
-  @IsString()
-  branchName?: string;
+  @IsDateString()
+  firstPaymentDate?: string;
 
   @IsOptional()
   @IsMongoId()
   managerId?: string;
-
-  @IsOptional()
-  @IsMongoId()
-  guarantorId?: string;
 
   @IsOptional()
   @IsString()
