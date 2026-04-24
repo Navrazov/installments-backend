@@ -225,6 +225,20 @@ export class UsersController {
         UserRole.ACCOUNTANT,
         UserRole.SECURITY,
       ],
+      [UserRole.ORG_OWNER]: [
+        UserRole.ORG_MANAGER,
+        UserRole.ORG_EMPLOYEE,
+        UserRole.MANAGER,
+        UserRole.CASHIER,
+        UserRole.ACCOUNTANT,
+        UserRole.SECURITY,
+      ],
+      [UserRole.ORG_MANAGER]: [
+        UserRole.ORG_EMPLOYEE,
+        UserRole.CASHIER,
+        UserRole.ACCOUNTANT,
+        UserRole.SECURITY,
+      ],
     };
 
     const allowed = allowedRolesByInviter[currentUser.role];

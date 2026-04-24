@@ -55,6 +55,11 @@ let OrganizationsController = class OrganizationsController {
     }
     async update(id, dto, currentUser) {
         this.assertOrgAccess(currentUser, id);
+        if (currentUser.role !== roles_1.UserRole.SUPER_ADMIN &&
+            currentUser.role !== roles_1.UserRole.ADMIN_PARTNER) {
+            delete dto.subscriptionTier;
+            delete dto.ownerId;
+        }
         return this.organizationsService.update(id, dto);
     }
     async suspend(id) {
@@ -132,7 +137,7 @@ __decorate([
 ], OrganizationsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ADMIN_PARTNER),
+    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),

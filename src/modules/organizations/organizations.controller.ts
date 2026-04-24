@@ -82,13 +82,23 @@ export class OrganizationsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN_PARTNER)
+  @Roles(UserRole.DIRECTOR)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateOrganizationDto,
     @CurrentUser() currentUser: JwtPayloadUser,
   ) {
     this.assertOrgAccess(currentUser, id);
+
+    // Org-level users cannot change billing-critical fields
+    if (
+      currentUser.role !== UserRole.SUPER_ADMIN &&
+      currentUser.role !== UserRole.ADMIN_PARTNER
+    ) {
+      delete dto.subscriptionTier;
+      delete dto.ownerId;
+    }
+
     return this.organizationsService.update(id, dto);
   }
 

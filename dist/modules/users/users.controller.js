@@ -134,6 +134,20 @@ let UsersController = class UsersController {
                 roles_1.UserRole.ACCOUNTANT,
                 roles_1.UserRole.SECURITY,
             ],
+            [roles_1.UserRole.ORG_OWNER]: [
+                roles_1.UserRole.ORG_MANAGER,
+                roles_1.UserRole.ORG_EMPLOYEE,
+                roles_1.UserRole.MANAGER,
+                roles_1.UserRole.CASHIER,
+                roles_1.UserRole.ACCOUNTANT,
+                roles_1.UserRole.SECURITY,
+            ],
+            [roles_1.UserRole.ORG_MANAGER]: [
+                roles_1.UserRole.ORG_EMPLOYEE,
+                roles_1.UserRole.CASHIER,
+                roles_1.UserRole.ACCOUNTANT,
+                roles_1.UserRole.SECURITY,
+            ],
         };
         const allowed = allowedRolesByInviter[currentUser.role];
         if (!allowed || !allowed.includes(targetRole)) {
