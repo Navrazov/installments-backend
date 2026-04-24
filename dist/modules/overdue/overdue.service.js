@@ -230,18 +230,39 @@ let OverdueService = OverdueService_1 = class OverdueService {
         for (const deal of activeDeals) {
             let totalOverdueAmount = 0;
             let maxOverdueDays = 0;
+            let scheduleDirty = false;
             for (const payment of deal.paymentSchedule) {
-                if (payment.status === deal_schema_1.PaymentScheduleStatus.OVERDUE ||
-                    (payment.status === deal_schema_1.PaymentScheduleStatus.PENDING && new Date(payment.date) < now)) {
+                const paymentDate = new Date(payment.date);
+                const isPastDue = paymentDate < now;
+                if (isPastDue &&
+                    (payment.status === deal_schema_1.PaymentScheduleStatus.PENDING ||
+                        payment.status === deal_schema_1.PaymentScheduleStatus.PARTIAL)) {
+                    payment.status = deal_schema_1.PaymentScheduleStatus.OVERDUE;
+                    scheduleDirty = true;
+                }
+                if (payment.status === deal_schema_1.PaymentScheduleStatus.OVERDUE) {
                     totalOverdueAmount += payment.amount;
-                    const diffMs = now.getTime() - new Date(payment.date).getTime();
+                    const diffMs = now.getTime() - paymentDate.getTime();
                     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                     if (diffDays > maxOverdueDays) {
                         maxOverdueDays = diffDays;
                     }
                 }
             }
-            if (totalOverdueAmount > 0 && maxOverdueDays > 0) {
+            if (scheduleDirty) {
+                deal.markModified('paymentSchedule');
+            }
+            const shouldBeOverdue = totalOverdueAmount > 0 && maxOverdueDays > 0;
+            if (shouldBeOverdue && deal.status === deal_schema_1.DealStatus.ACTIVE) {
+                deal.status = deal_schema_1.DealStatus.OVERDUE;
+            }
+            else if (!shouldBeOverdue && deal.status === deal_schema_1.DealStatus.OVERDUE) {
+                deal.status = deal_schema_1.DealStatus.ACTIVE;
+            }
+            if (scheduleDirty || deal.isModified('status')) {
+                await deal.save();
+            }
+            if (shouldBeOverdue) {
                 const existing = await this.overdueModel
                     .findOne({
                     organizationId: orgOid,
@@ -269,7 +290,6 @@ let OverdueService = OverdueService_1 = class OverdueService {
                 }
             }
         }
-        this.logger.log(`Overdue sync completed for org ${orgId}: created=${created}, updated=${updated}`);
         return { created, updated };
     }
 };

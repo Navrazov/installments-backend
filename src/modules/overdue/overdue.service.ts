@@ -291,14 +291,24 @@ export class OverdueService {
     for (const deal of activeDeals) {
       let totalOverdueAmount = 0;
       let maxOverdueDays = 0;
+      let scheduleDirty = false;
 
       for (const payment of deal.paymentSchedule) {
+        const paymentDate = new Date(payment.date);
+        const isPastDue = paymentDate < now;
+
         if (
-          payment.status === PaymentScheduleStatus.OVERDUE ||
-          (payment.status === PaymentScheduleStatus.PENDING && new Date(payment.date) < now)
+          isPastDue &&
+          (payment.status === PaymentScheduleStatus.PENDING ||
+            payment.status === PaymentScheduleStatus.PARTIAL)
         ) {
+          payment.status = PaymentScheduleStatus.OVERDUE;
+          scheduleDirty = true;
+        }
+
+        if (payment.status === PaymentScheduleStatus.OVERDUE) {
           totalOverdueAmount += payment.amount;
-          const diffMs = now.getTime() - new Date(payment.date).getTime();
+          const diffMs = now.getTime() - paymentDate.getTime();
           const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
           if (diffDays > maxOverdueDays) {
             maxOverdueDays = diffDays;
@@ -306,7 +316,22 @@ export class OverdueService {
         }
       }
 
-      if (totalOverdueAmount > 0 && maxOverdueDays > 0) {
+      if (scheduleDirty) {
+        deal.markModified('paymentSchedule');
+      }
+
+      const shouldBeOverdue = totalOverdueAmount > 0 && maxOverdueDays > 0;
+      if (shouldBeOverdue && deal.status === DealStatus.ACTIVE) {
+        deal.status = DealStatus.OVERDUE;
+      } else if (!shouldBeOverdue && deal.status === DealStatus.OVERDUE) {
+        deal.status = DealStatus.ACTIVE;
+      }
+
+      if (scheduleDirty || deal.isModified('status')) {
+        await deal.save();
+      }
+
+      if (shouldBeOverdue) {
         const existing = await this.overdueModel
           .findOne({
             organizationId: orgOid,
@@ -334,10 +359,6 @@ export class OverdueService {
         }
       }
     }
-
-    this.logger.log(
-      `Overdue sync completed for org ${orgId}: created=${created}, updated=${updated}`,
-    );
 
     return { created, updated };
   }

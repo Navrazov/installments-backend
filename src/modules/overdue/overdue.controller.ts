@@ -28,12 +28,14 @@ export class OverdueController {
     @Query() query: QueryOverdueDto,
   ) {
     const orgId = req.user.organizationId!.toString();
+    await this.overdueService.syncOverdueFromDeals(orgId);
     return this.overdueService.findAll(orgId, query);
   }
 
   @Get('stats')
   async getStats(@Request() req: AuthenticatedRequest) {
     const orgId = req.user.organizationId!.toString();
+    await this.overdueService.syncOverdueFromDeals(orgId);
     return this.overdueService.getStats(orgId);
   }
 
