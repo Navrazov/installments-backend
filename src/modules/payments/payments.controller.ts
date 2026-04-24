@@ -20,6 +20,10 @@ const PAYMENT_WRITE_ROLES: UserRole[] = [
   UserRole.CASHIER,
   UserRole.SECURITY,
   UserRole.DIRECTOR,
+  UserRole.MANAGER,
+  UserRole.ORG_OWNER,
+  UserRole.ORG_MANAGER,
+  UserRole.ORG_EMPLOYEE,
   UserRole.ADMIN_PARTNER,
   UserRole.SUPER_ADMIN,
 ];

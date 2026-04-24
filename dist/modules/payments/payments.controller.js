@@ -23,6 +23,10 @@ const PAYMENT_WRITE_ROLES = [
     roles_1.UserRole.CASHIER,
     roles_1.UserRole.SECURITY,
     roles_1.UserRole.DIRECTOR,
+    roles_1.UserRole.MANAGER,
+    roles_1.UserRole.ORG_OWNER,
+    roles_1.UserRole.ORG_MANAGER,
+    roles_1.UserRole.ORG_EMPLOYEE,
     roles_1.UserRole.ADMIN_PARTNER,
     roles_1.UserRole.SUPER_ADMIN,
 ];
