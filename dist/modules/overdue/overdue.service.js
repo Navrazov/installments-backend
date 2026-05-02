@@ -164,7 +164,9 @@ let OverdueService = OverdueService_1 = class OverdueService {
     }
     async getStats(orgId) {
         const orgOid = new mongoose_2.Types.ObjectId(orgId);
-        const [aggregateResult, statusBreakdown] = await Promise.all([
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const [aggregateResult, statusBreakdown, newThisWeek, resolvedThisWeek] = await Promise.all([
             this.overdueModel
                 .aggregate([
                 {
@@ -199,6 +201,19 @@ let OverdueService = OverdueService_1 = class OverdueService {
                 },
             ])
                 .exec(),
+            this.overdueModel
+                .countDocuments({
+                organizationId: orgOid,
+                createdAt: { $gte: weekAgo },
+            })
+                .exec(),
+            this.overdueModel
+                .countDocuments({
+                organizationId: orgOid,
+                status: overdue_schema_1.OverdueStatus.RESOLVED,
+                updatedAt: { $gte: weekAgo },
+            })
+                .exec(),
         ]);
         const stats = aggregateResult[0] || {
             totalCount: 0,
@@ -210,10 +225,12 @@ let OverdueService = OverdueService_1 = class OverdueService {
             byStatus[item._id] = item.count;
         }
         return {
-            totalCount: stats.totalCount,
-            totalAmount: stats.totalAmount,
-            averageDays: Math.round(stats.averageDays * 100) / 100,
+            totalOverdue: stats.totalCount,
+            totalOverdueAmount: stats.totalAmount,
+            averageOverdueDays: Math.round((stats.averageDays || 0) * 100) / 100,
             byStatus,
+            newThisWeek,
+            resolvedThisWeek,
         };
     }
     async syncOverdueFromDeals(orgId) {

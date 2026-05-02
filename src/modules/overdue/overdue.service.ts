@@ -212,49 +212,67 @@ export class OverdueService {
   }
 
   async getStats(orgId: string): Promise<{
-    totalCount: number;
-    totalAmount: number;
-    averageDays: number;
+    totalOverdue: number;
+    totalOverdueAmount: number;
+    averageOverdueDays: number;
     byStatus: Record<string, number>;
+    newThisWeek: number;
+    resolvedThisWeek: number;
   }> {
     const orgOid = new Types.ObjectId(orgId);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
 
-    const [aggregateResult, statusBreakdown] = await Promise.all([
-      this.overdueModel
-        .aggregate([
-          {
-            $match: {
-              organizationId: orgOid,
-              status: { $ne: OverdueStatus.RESOLVED },
+    const [aggregateResult, statusBreakdown, newThisWeek, resolvedThisWeek] =
+      await Promise.all([
+        this.overdueModel
+          .aggregate([
+            {
+              $match: {
+                organizationId: orgOid,
+                status: { $ne: OverdueStatus.RESOLVED },
+              },
             },
-          },
-          {
-            $group: {
-              _id: null,
-              totalCount: { $sum: 1 },
-              totalAmount: { $sum: '$overdueAmount' },
-              averageDays: { $avg: '$overdueDays' },
+            {
+              $group: {
+                _id: null,
+                totalCount: { $sum: 1 },
+                totalAmount: { $sum: '$overdueAmount' },
+                averageDays: { $avg: '$overdueDays' },
+              },
             },
-          },
-        ])
-        .exec(),
-      this.overdueModel
-        .aggregate([
-          {
-            $match: {
-              organizationId: orgOid,
-              status: { $ne: OverdueStatus.RESOLVED },
+          ])
+          .exec(),
+        this.overdueModel
+          .aggregate([
+            {
+              $match: {
+                organizationId: orgOid,
+                status: { $ne: OverdueStatus.RESOLVED },
+              },
             },
-          },
-          {
-            $group: {
-              _id: '$status',
-              count: { $sum: 1 },
+            {
+              $group: {
+                _id: '$status',
+                count: { $sum: 1 },
+              },
             },
-          },
-        ])
-        .exec(),
-    ]);
+          ])
+          .exec(),
+        this.overdueModel
+          .countDocuments({
+            organizationId: orgOid,
+            createdAt: { $gte: weekAgo },
+          })
+          .exec(),
+        this.overdueModel
+          .countDocuments({
+            organizationId: orgOid,
+            status: OverdueStatus.RESOLVED,
+            updatedAt: { $gte: weekAgo },
+          })
+          .exec(),
+      ]);
 
     const stats = aggregateResult[0] || {
       totalCount: 0,
@@ -268,10 +286,12 @@ export class OverdueService {
     }
 
     return {
-      totalCount: stats.totalCount,
-      totalAmount: stats.totalAmount,
-      averageDays: Math.round(stats.averageDays * 100) / 100,
+      totalOverdue: stats.totalCount,
+      totalOverdueAmount: stats.totalAmount,
+      averageOverdueDays: Math.round((stats.averageDays || 0) * 100) / 100,
       byStatus,
+      newThisWeek,
+      resolvedThisWeek,
     };
   }
 

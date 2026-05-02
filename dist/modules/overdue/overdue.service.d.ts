@@ -19,10 +19,12 @@ export declare class OverdueService {
     updateStatus(orgId: string, overdueId: string, dto: UpdateOverdueDto, userId: string): Promise<OverdueDocument>;
     resolve(orgId: string, overdueId: string, userId: string): Promise<OverdueDocument>;
     getStats(orgId: string): Promise<{
-        totalCount: number;
-        totalAmount: number;
-        averageDays: number;
+        totalOverdue: number;
+        totalOverdueAmount: number;
+        averageOverdueDays: number;
         byStatus: Record<string, number>;
+        newThisWeek: number;
+        resolvedThisWeek: number;
     }>;
     syncOverdueFromDeals(orgId: string): Promise<{
         created: number;

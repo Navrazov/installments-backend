@@ -12,10 +12,12 @@ export declare class OverdueController {
         limit: number;
     }>;
     getStats(req: AuthenticatedRequest): Promise<{
-        totalCount: number;
-        totalAmount: number;
-        averageDays: number;
+        totalOverdue: number;
+        totalOverdueAmount: number;
+        averageOverdueDays: number;
         byStatus: Record<string, number>;
+        newThisWeek: number;
+        resolvedThisWeek: number;
     }>;
     findById(req: AuthenticatedRequest, id: string): Promise<import("./schemas/overdue.schema").OverdueDocument>;
     updateStatus(req: AuthenticatedRequest, id: string, dto: UpdateOverdueDto): Promise<import("./schemas/overdue.schema").OverdueDocument>;
