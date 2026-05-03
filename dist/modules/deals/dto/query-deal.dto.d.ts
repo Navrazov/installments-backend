@@ -7,6 +7,7 @@ export declare class QueryDealDto {
     managerId?: string;
     startDateFrom?: string;
     startDateTo?: string;
+    search?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
 }

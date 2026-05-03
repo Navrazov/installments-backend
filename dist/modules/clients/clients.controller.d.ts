@@ -4,6 +4,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { QueryClientDto } from './dto/query-client.dto';
 import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 import { RiskStatus } from './schemas/client.schema';
+declare class UpdateRiskStatusBody {
+    riskStatus: RiskStatus;
+}
 export declare class ClientsController {
     private readonly clientsService;
     constructor(clientsService: ClientsService);
@@ -43,5 +46,6 @@ export declare class ClientsController {
             error: string;
         }[];
     }>;
-    updateRiskStatus(req: AuthenticatedRequest, id: string, riskStatus: RiskStatus): Promise<import("./schemas/client.schema").ClientDocument>;
+    updateRiskStatus(req: AuthenticatedRequest, id: string, body: UpdateRiskStatusBody): Promise<import("./schemas/client.schema").ClientDocument>;
 }
+export {};

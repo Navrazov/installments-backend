@@ -38,14 +38,14 @@ export class OrgAccessGuard implements CanActivate {
       return true;
     }
 
-    // Ensure the user belongs to the organization they are trying to access
-    if (!user.orgId) {
+    // БАГ-08 fix: JWT strategy sets organizationId, not orgId
+    if (!user.organizationId) {
       throw new ForbiddenException(
         'User is not associated with any organization',
       );
     }
 
-    if (user.orgId.toString() !== orgId.toString()) {
+    if (user.organizationId.toString() !== orgId.toString()) {
       throw new ForbiddenException(
         'You do not have access to this organization\'s data',
       );

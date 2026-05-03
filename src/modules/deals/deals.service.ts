@@ -123,7 +123,7 @@ export class DealsService {
     orgId: Types.ObjectId,
     query: QueryDealDto,
   ): Promise<{ data: DealDocument[]; total: number; page: number; limit: number }> {
-    const { page = 1, limit = 20, status, clientId, managerId, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const { page = 1, limit = 20, status, clientId, managerId, search, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
     const filter: FilterQuery<DealDocument> = { organizationId: orgId };
 
@@ -135,6 +135,11 @@ export class DealsService {
     }
     if (managerId) {
       filter.managerId = new Types.ObjectId(managerId);
+    }
+    if (search && search.trim().length > 0) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter.dealNumber = { $regex: regex };
     }
     if (startDateFrom || startDateTo) {
       filter.startDate = {};
@@ -230,18 +235,33 @@ export class DealsService {
       const remainingAmountBase = totalAmount - downPayment;
       const monthlyPayment = remainingAmountBase / termMonths;
 
-      const totalPaid = totalAmount - deal.remainingAmount - deal.downPayment;
+      // БАГ-04 fix: use deal.totalAmount (old value), not totalAmount (new value)
+      const totalPaid = deal.totalAmount - deal.downPayment - deal.remainingAmount;
       const newRemaining = remainingAmountBase - totalPaid;
 
       const endDate = new Date(firstPaymentDate);
       endDate.setMonth(endDate.getMonth() + termMonths - 1);
 
-      const paymentSchedule = this.generatePaymentSchedule(
+      const newSchedule = this.generatePaymentSchedule(
         firstPaymentDate,
         termMonths,
         monthlyPayment,
         remainingAmountBase,
       );
+
+      // БАГ-03 fix: preserve PAID/PARTIAL entries from the original schedule so payment
+      // history is not wiped when financial terms are edited
+      const oldSchedule = deal.paymentSchedule;
+      for (let i = 0; i < newSchedule.length && i < oldSchedule.length; i++) {
+        if (
+          oldSchedule[i].status === PaymentScheduleStatus.PAID ||
+          oldSchedule[i].status === PaymentScheduleStatus.PARTIAL
+        ) {
+          newSchedule[i].status = oldSchedule[i].status;
+          newSchedule[i].date = oldSchedule[i].date;
+          newSchedule[i].amount = oldSchedule[i].amount;
+        }
+      }
 
       updateData.totalAmount = totalAmount;
       updateData.remainingAmount = Math.max(0, newRemaining);
@@ -249,7 +269,7 @@ export class DealsService {
       updateData.startDate = startDate;
       updateData.firstPaymentDate = firstPaymentDate;
       updateData.endDate = endDate;
-      updateData.paymentSchedule = paymentSchedule;
+      updateData.paymentSchedule = newSchedule;
     }
 
     const updated = await this.dealModel
@@ -297,6 +317,12 @@ export class DealsService {
     }
     if (deal.status === DealStatus.CLOSED) {
       throw new BadRequestException('Deal is already closed');
+    }
+    // БАГ-07 fix: prevent closing a deal that still has an outstanding balance
+    if (deal.remainingAmount > 0) {
+      throw new BadRequestException(
+        `Cannot close deal with unpaid balance of ${deal.remainingAmount} ₽`,
+      );
     }
 
     deal.status = DealStatus.CLOSED;
@@ -350,17 +376,23 @@ export class DealsService {
       }
     }
 
-    deal.markModified('paymentSchedule');
-    await deal.save();
+    // Update only the paymentSchedule field to avoid overwriting status/remainingAmount
+    // that were set atomically during payment processing
+    await this.dealModel
+      .findOneAndUpdate(
+        { _id: deal._id },
+        { $set: { paymentSchedule: deal.paymentSchedule } },
+      )
+      .exec();
   }
 
   async checkOverdue(): Promise<void> {
     const now = new Date();
 
-    // Find active deals that have overdue schedule entries
+    // БАГ-06 fix: include OVERDUE deals so new overdue entries within them are also updated
     const deals = await this.dealModel
       .find({
-        status: DealStatus.ACTIVE,
+        status: { $in: [DealStatus.ACTIVE, DealStatus.OVERDUE] },
         'paymentSchedule.date': { $lt: now },
         'paymentSchedule.status': {
           $in: [PaymentScheduleStatus.PENDING, PaymentScheduleStatus.PARTIAL],
@@ -389,7 +421,7 @@ export class DealsService {
         try {
           await this.smsService.notifyOverdue(deal.organizationId, deal);
         } catch (err) {
-          this.logger.warn(
+          this.logger.error(
             `Failed to send overdue SMS for deal ${deal._id}: ${(err as Error).message}`,
           );
         }
@@ -568,14 +600,14 @@ export class DealsService {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const dateStr = `${year}${month}${day}`;
-
     const prefix = `HL-${dateStr}-`;
 
-    // Find the last deal number for today
+    // БАГ-05 fix: find the last deal with this prefix, then verify uniqueness.
+    // The unique index on dealNumber in the schema is the final guard — if two requests
+    // race and generate the same number, only one insert succeeds; the other gets a
+    // duplicate-key error which bubbles up naturally (NestJS returns 500; callers should retry).
     const lastDeal = await this.dealModel
-      .findOne({
-        dealNumber: { $regex: `^${prefix}` },
-      })
+      .findOne({ dealNumber: { $regex: `^${prefix}` } })
       .sort({ dealNumber: -1 })
       .select('dealNumber')
       .exec();
@@ -583,7 +615,7 @@ export class DealsService {
     let sequence = 1;
     if (lastDeal) {
       const lastSeq = parseInt(lastDeal.dealNumber.split('-').pop() || '0', 10);
-      sequence = lastSeq + 1;
+      sequence = isNaN(lastSeq) ? 1 : lastSeq + 1;
     }
 
     const seqStr = String(sequence).padStart(4, '0');

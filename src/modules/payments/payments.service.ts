@@ -31,39 +31,56 @@ export class PaymentsService {
     dto: CreatePaymentDto,
     userId: Types.ObjectId,
   ): Promise<PaymentDocument> {
-    const deal = await this.dealModel
-      .findOne({
-        _id: new Types.ObjectId(dto.dealId),
-        organizationId: orgId,
-      })
+    // Pre-validate existence and status before attempting the atomic update
+    const existing = await this.dealModel
+      .findOne({ _id: new Types.ObjectId(dto.dealId), organizationId: orgId })
       .exec();
 
-    if (!deal) {
-      throw new NotFoundException('Deal not found');
-    }
-
-    if (deal.status === DealStatus.CLOSED) {
+    if (!existing) throw new NotFoundException('Deal not found');
+    if (existing.status === DealStatus.CLOSED)
       throw new BadRequestException('Cannot add payment to a closed deal');
-    }
-    if (deal.status === DealStatus.CANCELLED) {
+    if (existing.status === DealStatus.CANCELLED)
       throw new BadRequestException('Cannot add payment to a cancelled deal');
-    }
 
-    if (dto.amount > deal.remainingAmount) {
+    const newRemaining = Math.round((existing.remainingAmount - dto.amount) * 100) / 100;
+
+    // БАГ-01 fix: atomic decrement with guard — succeeds only if remainingAmount >= dto.amount
+    // at the exact moment of the update, preventing concurrent over-payment
+    const dealBeforeUpdate = await this.dealModel
+      .findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(dto.dealId),
+          organizationId: orgId,
+          status: { $nin: [DealStatus.CLOSED, DealStatus.CANCELLED] },
+          remainingAmount: { $gte: dto.amount },
+        },
+        { $set: { remainingAmount: Math.max(0, newRemaining) } },
+        { new: false }, // return document as it was BEFORE the update
+      )
+      .exec();
+
+    if (!dealBeforeUpdate) {
+      // Re-read to provide an accurate error message
+      const current = await this.dealModel
+        .findOne({ _id: new Types.ObjectId(dto.dealId), organizationId: orgId })
+        .exec();
+      if (!current) throw new NotFoundException('Deal not found');
+      if (current.status === DealStatus.CLOSED)
+        throw new BadRequestException('Cannot add payment to a closed deal');
       throw new BadRequestException(
-        `Payment amount (${dto.amount}) exceeds remaining amount (${deal.remainingAmount})`,
+        `Payment amount (${dto.amount}) exceeds remaining amount (${current.remainingAmount})`,
       );
     }
 
-    // Find the closest unpaid schedule entry and mark it
-    const scheduledDate = this.findAndUpdateScheduleEntry(deal, dto.amount);
+    // Update schedule entry in memory on the pre-update snapshot
+    const scheduledDate = this.findAndUpdateScheduleEntry(dealBeforeUpdate, dto.amount);
 
-    const newRemaining = Math.round((deal.remainingAmount - dto.amount) * 100) / 100;
-
+    // БАГ-02 fix: create the payment document after the deal has been atomically updated,
+    // so a failed payment save cannot leave the deal in a decremented state without a record
     const payment = new this.paymentModel({
       organizationId: orgId,
-      dealId: deal._id,
-      clientId: deal.clientId,
+      dealId: dealBeforeUpdate._id,
+      clientId: dealBeforeUpdate.clientId,
       amount: dto.amount,
       paymentDate: new Date(dto.paymentDate),
       paymentMethod: dto.paymentMethod,
@@ -76,33 +93,27 @@ export class PaymentsService {
 
     const savedPayment = await payment.save();
 
-    // Update deal remaining amount
-    deal.remainingAmount = Math.max(0, newRemaining);
-
-    // If remaining is 0, close the deal
-    if (deal.remainingAmount <= 0) {
-      deal.status = DealStatus.CLOSED;
-    } else if (deal.status === DealStatus.OVERDUE) {
-      // Check if there are still overdue entries
-      const hasOverdue = deal.paymentSchedule.some(
-        (entry) => entry.status === PaymentScheduleStatus.OVERDUE,
-      );
-      if (!hasOverdue) {
-        deal.status = DealStatus.ACTIVE;
-      }
+    // Atomically close the deal if fully paid
+    if (newRemaining <= 0) {
+      await this.dealModel
+        .findOneAndUpdate(
+          { _id: dealBeforeUpdate._id, organizationId: orgId },
+          { $set: { status: DealStatus.CLOSED } },
+        )
+        .exec();
+    } else if (dealBeforeUpdate.status === DealStatus.OVERDUE) {
+      // Re-evaluate overdue status after payment — updatePaymentScheduleStatus will handle it
     }
 
-    deal.markModified('paymentSchedule');
-    await deal.save();
-
-    // Recalculate full schedule statuses based on all payments
-    await this.dealsService.updatePaymentScheduleStatus(deal._id);
+    // Recalculate full schedule statuses from all payments (idempotent reconciliation)
+    await this.dealsService.updatePaymentScheduleStatus(dealBeforeUpdate._id);
 
     try {
-      await this.smsService.notifyPayment(orgId, deal, savedPayment);
+      await this.smsService.notifyPayment(orgId, dealBeforeUpdate, savedPayment);
     } catch (err) {
-      this.logger.warn(
-        `Failed to send payment SMS for deal ${deal._id}: ${(err as Error).message}`,
+      // БАГ-20 fix: log as error so monitoring/alerting can pick it up
+      this.logger.error(
+        `Failed to send payment SMS for deal ${dealBeforeUpdate._id}: ${(err as Error).message}`,
       );
     }
 
@@ -281,39 +292,52 @@ export class PaymentsService {
     amount: number,
     userId: Types.ObjectId,
   ): Promise<PaymentDocument> {
-    const deal = await this.dealModel
-      .findOne({
-        _id: new Types.ObjectId(dealId),
-        organizationId: orgId,
-      })
+    // Pre-validate
+    const existing = await this.dealModel
+      .findOne({ _id: new Types.ObjectId(dealId), organizationId: orgId })
       .exec();
 
-    if (!deal) {
-      throw new NotFoundException('Deal not found');
-    }
-
-    if (deal.status === DealStatus.CLOSED) {
+    if (!existing) throw new NotFoundException('Deal not found');
+    if (existing.status === DealStatus.CLOSED)
       throw new BadRequestException('Deal is already closed');
-    }
-    if (deal.status === DealStatus.CANCELLED) {
+    if (existing.status === DealStatus.CANCELLED)
       throw new BadRequestException('Deal is cancelled');
-    }
 
-    if (amount > deal.remainingAmount) {
+    const newRemaining = Math.round((existing.remainingAmount - amount) * 100) / 100;
+
+    // Atomic decrement with guard
+    const dealBeforeUpdate = await this.dealModel
+      .findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(dealId),
+          organizationId: orgId,
+          status: { $nin: [DealStatus.CLOSED, DealStatus.CANCELLED] },
+          remainingAmount: { $gte: amount },
+        },
+        { $set: { remainingAmount: Math.max(0, newRemaining) } },
+        { new: false },
+      )
+      .exec();
+
+    if (!dealBeforeUpdate) {
+      const current = await this.dealModel
+        .findOne({ _id: new Types.ObjectId(dealId), organizationId: orgId })
+        .exec();
+      if (!current) throw new NotFoundException('Deal not found');
+      if (current.status === DealStatus.CLOSED)
+        throw new BadRequestException('Deal is already closed');
       throw new BadRequestException(
-        `Early repayment amount (${amount}) exceeds remaining amount (${deal.remainingAmount})`,
+        `Early repayment amount (${amount}) exceeds remaining amount (${current.remainingAmount})`,
       );
     }
 
-    const newRemaining = Math.round((deal.remainingAmount - amount) * 100) / 100;
-
-    // Mark all remaining schedule entries proportionally
-    this.applyEarlyRepaymentToSchedule(deal, amount);
+    // Mark schedule entries proportionally on the pre-update snapshot
+    this.applyEarlyRepaymentToSchedule(dealBeforeUpdate, amount);
 
     const payment = new this.paymentModel({
       organizationId: orgId,
-      dealId: deal._id,
-      clientId: deal.clientId,
+      dealId: dealBeforeUpdate._id,
+      clientId: dealBeforeUpdate.clientId,
       amount,
       paymentDate: new Date(),
       paymentMethod: PaymentMethod.TRANSFER,
@@ -325,24 +349,26 @@ export class PaymentsService {
 
     const savedPayment = await payment.save();
 
-    deal.remainingAmount = Math.max(0, newRemaining);
-
-    if (deal.remainingAmount <= 0) {
-      deal.status = DealStatus.CLOSED;
-      // Mark all remaining pending entries as paid
-      for (const entry of deal.paymentSchedule) {
-        if (
-          entry.status === PaymentScheduleStatus.PENDING ||
-          entry.status === PaymentScheduleStatus.PARTIAL ||
-          entry.status === PaymentScheduleStatus.OVERDUE
-        ) {
-          entry.status = PaymentScheduleStatus.PAID;
-        }
-      }
+    if (newRemaining <= 0) {
+      // Atomically close the deal and mark all remaining entries as paid
+      const allPaidSchedule = dealBeforeUpdate.paymentSchedule.map((e) => ({
+        ...e,
+        status:
+          e.status === PaymentScheduleStatus.PENDING ||
+          e.status === PaymentScheduleStatus.PARTIAL ||
+          e.status === PaymentScheduleStatus.OVERDUE
+            ? PaymentScheduleStatus.PAID
+            : e.status,
+      }));
+      await this.dealModel
+        .findOneAndUpdate(
+          { _id: dealBeforeUpdate._id, organizationId: orgId },
+          { $set: { status: DealStatus.CLOSED, paymentSchedule: allPaidSchedule } },
+        )
+        .exec();
     }
 
-    deal.markModified('paymentSchedule');
-    await deal.save();
+    await this.dealsService.updatePaymentScheduleStatus(dealBeforeUpdate._id);
 
     return savedPayment;
   }

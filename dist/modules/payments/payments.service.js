@@ -32,30 +32,39 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async create(orgId, dto, userId) {
-        const deal = await this.dealModel
-            .findOne({
+        const existing = await this.dealModel
+            .findOne({ _id: new mongoose_2.Types.ObjectId(dto.dealId), organizationId: orgId })
+            .exec();
+        if (!existing)
+            throw new common_1.NotFoundException('Deal not found');
+        if (existing.status === deal_schema_1.DealStatus.CLOSED)
+            throw new common_1.BadRequestException('Cannot add payment to a closed deal');
+        if (existing.status === deal_schema_1.DealStatus.CANCELLED)
+            throw new common_1.BadRequestException('Cannot add payment to a cancelled deal');
+        const newRemaining = Math.round((existing.remainingAmount - dto.amount) * 100) / 100;
+        const dealBeforeUpdate = await this.dealModel
+            .findOneAndUpdate({
             _id: new mongoose_2.Types.ObjectId(dto.dealId),
             organizationId: orgId,
-        })
+            status: { $nin: [deal_schema_1.DealStatus.CLOSED, deal_schema_1.DealStatus.CANCELLED] },
+            remainingAmount: { $gte: dto.amount },
+        }, { $set: { remainingAmount: Math.max(0, newRemaining) } }, { new: false })
             .exec();
-        if (!deal) {
-            throw new common_1.NotFoundException('Deal not found');
+        if (!dealBeforeUpdate) {
+            const current = await this.dealModel
+                .findOne({ _id: new mongoose_2.Types.ObjectId(dto.dealId), organizationId: orgId })
+                .exec();
+            if (!current)
+                throw new common_1.NotFoundException('Deal not found');
+            if (current.status === deal_schema_1.DealStatus.CLOSED)
+                throw new common_1.BadRequestException('Cannot add payment to a closed deal');
+            throw new common_1.BadRequestException(`Payment amount (${dto.amount}) exceeds remaining amount (${current.remainingAmount})`);
         }
-        if (deal.status === deal_schema_1.DealStatus.CLOSED) {
-            throw new common_1.BadRequestException('Cannot add payment to a closed deal');
-        }
-        if (deal.status === deal_schema_1.DealStatus.CANCELLED) {
-            throw new common_1.BadRequestException('Cannot add payment to a cancelled deal');
-        }
-        if (dto.amount > deal.remainingAmount) {
-            throw new common_1.BadRequestException(`Payment amount (${dto.amount}) exceeds remaining amount (${deal.remainingAmount})`);
-        }
-        const scheduledDate = this.findAndUpdateScheduleEntry(deal, dto.amount);
-        const newRemaining = Math.round((deal.remainingAmount - dto.amount) * 100) / 100;
+        const scheduledDate = this.findAndUpdateScheduleEntry(dealBeforeUpdate, dto.amount);
         const payment = new this.paymentModel({
             organizationId: orgId,
-            dealId: deal._id,
-            clientId: deal.clientId,
+            dealId: dealBeforeUpdate._id,
+            clientId: dealBeforeUpdate.clientId,
             amount: dto.amount,
             paymentDate: new Date(dto.paymentDate),
             paymentMethod: dto.paymentMethod,
@@ -66,24 +75,19 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             createdBy: userId,
         });
         const savedPayment = await payment.save();
-        deal.remainingAmount = Math.max(0, newRemaining);
-        if (deal.remainingAmount <= 0) {
-            deal.status = deal_schema_1.DealStatus.CLOSED;
+        if (newRemaining <= 0) {
+            await this.dealModel
+                .findOneAndUpdate({ _id: dealBeforeUpdate._id, organizationId: orgId }, { $set: { status: deal_schema_1.DealStatus.CLOSED } })
+                .exec();
         }
-        else if (deal.status === deal_schema_1.DealStatus.OVERDUE) {
-            const hasOverdue = deal.paymentSchedule.some((entry) => entry.status === deal_schema_1.PaymentScheduleStatus.OVERDUE);
-            if (!hasOverdue) {
-                deal.status = deal_schema_1.DealStatus.ACTIVE;
-            }
+        else if (dealBeforeUpdate.status === deal_schema_1.DealStatus.OVERDUE) {
         }
-        deal.markModified('paymentSchedule');
-        await deal.save();
-        await this.dealsService.updatePaymentScheduleStatus(deal._id);
+        await this.dealsService.updatePaymentScheduleStatus(dealBeforeUpdate._id);
         try {
-            await this.smsService.notifyPayment(orgId, deal, savedPayment);
+            await this.smsService.notifyPayment(orgId, dealBeforeUpdate, savedPayment);
         }
         catch (err) {
-            this.logger.warn(`Failed to send payment SMS for deal ${deal._id}: ${err.message}`);
+            this.logger.error(`Failed to send payment SMS for deal ${dealBeforeUpdate._id}: ${err.message}`);
         }
         return savedPayment;
     }
@@ -216,30 +220,39 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         };
     }
     async earlyRepayment(orgId, dealId, amount, userId) {
-        const deal = await this.dealModel
-            .findOne({
+        const existing = await this.dealModel
+            .findOne({ _id: new mongoose_2.Types.ObjectId(dealId), organizationId: orgId })
+            .exec();
+        if (!existing)
+            throw new common_1.NotFoundException('Deal not found');
+        if (existing.status === deal_schema_1.DealStatus.CLOSED)
+            throw new common_1.BadRequestException('Deal is already closed');
+        if (existing.status === deal_schema_1.DealStatus.CANCELLED)
+            throw new common_1.BadRequestException('Deal is cancelled');
+        const newRemaining = Math.round((existing.remainingAmount - amount) * 100) / 100;
+        const dealBeforeUpdate = await this.dealModel
+            .findOneAndUpdate({
             _id: new mongoose_2.Types.ObjectId(dealId),
             organizationId: orgId,
-        })
+            status: { $nin: [deal_schema_1.DealStatus.CLOSED, deal_schema_1.DealStatus.CANCELLED] },
+            remainingAmount: { $gte: amount },
+        }, { $set: { remainingAmount: Math.max(0, newRemaining) } }, { new: false })
             .exec();
-        if (!deal) {
-            throw new common_1.NotFoundException('Deal not found');
+        if (!dealBeforeUpdate) {
+            const current = await this.dealModel
+                .findOne({ _id: new mongoose_2.Types.ObjectId(dealId), organizationId: orgId })
+                .exec();
+            if (!current)
+                throw new common_1.NotFoundException('Deal not found');
+            if (current.status === deal_schema_1.DealStatus.CLOSED)
+                throw new common_1.BadRequestException('Deal is already closed');
+            throw new common_1.BadRequestException(`Early repayment amount (${amount}) exceeds remaining amount (${current.remainingAmount})`);
         }
-        if (deal.status === deal_schema_1.DealStatus.CLOSED) {
-            throw new common_1.BadRequestException('Deal is already closed');
-        }
-        if (deal.status === deal_schema_1.DealStatus.CANCELLED) {
-            throw new common_1.BadRequestException('Deal is cancelled');
-        }
-        if (amount > deal.remainingAmount) {
-            throw new common_1.BadRequestException(`Early repayment amount (${amount}) exceeds remaining amount (${deal.remainingAmount})`);
-        }
-        const newRemaining = Math.round((deal.remainingAmount - amount) * 100) / 100;
-        this.applyEarlyRepaymentToSchedule(deal, amount);
+        this.applyEarlyRepaymentToSchedule(dealBeforeUpdate, amount);
         const payment = new this.paymentModel({
             organizationId: orgId,
-            dealId: deal._id,
-            clientId: deal.clientId,
+            dealId: dealBeforeUpdate._id,
+            clientId: dealBeforeUpdate.clientId,
             amount,
             paymentDate: new Date(),
             paymentMethod: payment_schema_1.PaymentMethod.TRANSFER,
@@ -249,19 +262,20 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             createdBy: userId,
         });
         const savedPayment = await payment.save();
-        deal.remainingAmount = Math.max(0, newRemaining);
-        if (deal.remainingAmount <= 0) {
-            deal.status = deal_schema_1.DealStatus.CLOSED;
-            for (const entry of deal.paymentSchedule) {
-                if (entry.status === deal_schema_1.PaymentScheduleStatus.PENDING ||
-                    entry.status === deal_schema_1.PaymentScheduleStatus.PARTIAL ||
-                    entry.status === deal_schema_1.PaymentScheduleStatus.OVERDUE) {
-                    entry.status = deal_schema_1.PaymentScheduleStatus.PAID;
-                }
-            }
+        if (newRemaining <= 0) {
+            const allPaidSchedule = dealBeforeUpdate.paymentSchedule.map((e) => ({
+                ...e,
+                status: e.status === deal_schema_1.PaymentScheduleStatus.PENDING ||
+                    e.status === deal_schema_1.PaymentScheduleStatus.PARTIAL ||
+                    e.status === deal_schema_1.PaymentScheduleStatus.OVERDUE
+                    ? deal_schema_1.PaymentScheduleStatus.PAID
+                    : e.status,
+            }));
+            await this.dealModel
+                .findOneAndUpdate({ _id: dealBeforeUpdate._id, organizationId: orgId }, { $set: { status: deal_schema_1.DealStatus.CLOSED, paymentSchedule: allPaidSchedule } })
+                .exec();
         }
-        deal.markModified('paymentSchedule');
-        await deal.save();
+        await this.dealsService.updatePaymentScheduleStatus(dealBeforeUpdate._id);
         return savedPayment;
     }
     findAndUpdateScheduleEntry(deal, paymentAmount) {

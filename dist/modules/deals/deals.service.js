@@ -98,7 +98,7 @@ let DealsService = DealsService_1 = class DealsService {
         return Math.round(value * 100) / 100;
     }
     async findAll(orgId, query) {
-        const { page = 1, limit = 20, status, clientId, managerId, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+        const { page = 1, limit = 20, status, clientId, managerId, search, startDateFrom, startDateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
         const filter = { organizationId: orgId };
         if (status) {
             filter.status = status;
@@ -108,6 +108,11 @@ let DealsService = DealsService_1 = class DealsService {
         }
         if (managerId) {
             filter.managerId = new mongoose_2.Types.ObjectId(managerId);
+        }
+        if (search && search.trim().length > 0) {
+            const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'i');
+            filter.dealNumber = { $regex: regex };
         }
         if (startDateFrom || startDateTo) {
             filter.startDate = {};
@@ -179,18 +184,27 @@ let DealsService = DealsService_1 = class DealsService {
             const totalAmount = salePrice;
             const remainingAmountBase = totalAmount - downPayment;
             const monthlyPayment = remainingAmountBase / termMonths;
-            const totalPaid = totalAmount - deal.remainingAmount - deal.downPayment;
+            const totalPaid = deal.totalAmount - deal.downPayment - deal.remainingAmount;
             const newRemaining = remainingAmountBase - totalPaid;
             const endDate = new Date(firstPaymentDate);
             endDate.setMonth(endDate.getMonth() + termMonths - 1);
-            const paymentSchedule = this.generatePaymentSchedule(firstPaymentDate, termMonths, monthlyPayment, remainingAmountBase);
+            const newSchedule = this.generatePaymentSchedule(firstPaymentDate, termMonths, monthlyPayment, remainingAmountBase);
+            const oldSchedule = deal.paymentSchedule;
+            for (let i = 0; i < newSchedule.length && i < oldSchedule.length; i++) {
+                if (oldSchedule[i].status === deal_schema_1.PaymentScheduleStatus.PAID ||
+                    oldSchedule[i].status === deal_schema_1.PaymentScheduleStatus.PARTIAL) {
+                    newSchedule[i].status = oldSchedule[i].status;
+                    newSchedule[i].date = oldSchedule[i].date;
+                    newSchedule[i].amount = oldSchedule[i].amount;
+                }
+            }
             updateData.totalAmount = totalAmount;
             updateData.remainingAmount = Math.max(0, newRemaining);
             updateData.monthlyPayment = Math.round(monthlyPayment * 100) / 100;
             updateData.startDate = startDate;
             updateData.firstPaymentDate = firstPaymentDate;
             updateData.endDate = endDate;
-            updateData.paymentSchedule = paymentSchedule;
+            updateData.paymentSchedule = newSchedule;
         }
         const updated = await this.dealModel
             .findOneAndUpdate({ _id: deal._id, organizationId: orgId }, { $set: updateData }, { new: true })
@@ -218,6 +232,9 @@ let DealsService = DealsService_1 = class DealsService {
         }
         if (deal.status === deal_schema_1.DealStatus.CLOSED) {
             throw new common_1.BadRequestException('Deal is already closed');
+        }
+        if (deal.remainingAmount > 0) {
+            throw new common_1.BadRequestException(`Cannot close deal with unpaid balance of ${deal.remainingAmount} ₽`);
         }
         deal.status = deal_schema_1.DealStatus.CLOSED;
         return deal.save();
@@ -261,14 +278,15 @@ let DealsService = DealsService_1 = class DealsService {
                 entry.status = deal_schema_1.PaymentScheduleStatus.PENDING;
             }
         }
-        deal.markModified('paymentSchedule');
-        await deal.save();
+        await this.dealModel
+            .findOneAndUpdate({ _id: deal._id }, { $set: { paymentSchedule: deal.paymentSchedule } })
+            .exec();
     }
     async checkOverdue() {
         const now = new Date();
         const deals = await this.dealModel
             .find({
-            status: deal_schema_1.DealStatus.ACTIVE,
+            status: { $in: [deal_schema_1.DealStatus.ACTIVE, deal_schema_1.DealStatus.OVERDUE] },
             'paymentSchedule.date': { $lt: now },
             'paymentSchedule.status': {
                 $in: [deal_schema_1.PaymentScheduleStatus.PENDING, deal_schema_1.PaymentScheduleStatus.PARTIAL],
@@ -293,7 +311,7 @@ let DealsService = DealsService_1 = class DealsService {
                     await this.smsService.notifyOverdue(deal.organizationId, deal);
                 }
                 catch (err) {
-                    this.logger.warn(`Failed to send overdue SMS for deal ${deal._id}: ${err.message}`);
+                    this.logger.error(`Failed to send overdue SMS for deal ${deal._id}: ${err.message}`);
                 }
             }
         }
@@ -411,16 +429,14 @@ let DealsService = DealsService_1 = class DealsService {
         const dateStr = `${year}${month}${day}`;
         const prefix = `HL-${dateStr}-`;
         const lastDeal = await this.dealModel
-            .findOne({
-            dealNumber: { $regex: `^${prefix}` },
-        })
+            .findOne({ dealNumber: { $regex: `^${prefix}` } })
             .sort({ dealNumber: -1 })
             .select('dealNumber')
             .exec();
         let sequence = 1;
         if (lastDeal) {
             const lastSeq = parseInt(lastDeal.dealNumber.split('-').pop() || '0', 10);
-            sequence = lastSeq + 1;
+            sequence = isNaN(lastSeq) ? 1 : lastSeq + 1;
         }
         const seqStr = String(sequence).padStart(4, '0');
         return `${prefix}${seqStr}`;

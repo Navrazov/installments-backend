@@ -27,10 +27,10 @@ let OrgAccessGuard = class OrgAccessGuard {
         if (!orgId) {
             return true;
         }
-        if (!user.orgId) {
+        if (!user.organizationId) {
             throw new common_1.ForbiddenException('User is not associated with any organization');
         }
-        if (user.orgId.toString() !== orgId.toString()) {
+        if (user.organizationId.toString() !== orgId.toString()) {
             throw new common_1.ForbiddenException('You do not have access to this organization\'s data');
         }
         return true;

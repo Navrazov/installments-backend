@@ -8,6 +8,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -25,9 +26,11 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  // БАГ-17 fix: 10 attempts per 15 minutes — far stricter than the global 200/min
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
   async login(@Body() loginDto: LoginDto, @Request() req: any) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
