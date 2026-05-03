@@ -188,6 +188,54 @@ export class ClientsService {
     return this.decryptClientPassport(client) as ClientDocument;
   }
 
+  async remove(
+    orgId: Types.ObjectId,
+    clientId: string,
+  ): Promise<{ success: true; deletedId: string }> {
+    if (!Types.ObjectId.isValid(clientId)) {
+      throw new BadRequestException('Invalid client ID');
+    }
+
+    const clientObjId = new Types.ObjectId(clientId);
+
+    // Block deletion if the client still has any deals — owners should cancel/close
+    // those first, otherwise we would orphan financial records.
+    const dealCount = await this.dealModel.countDocuments({
+      organizationId: orgId,
+      clientId: clientObjId,
+    });
+    if (dealCount > 0) {
+      throw new BadRequestException(
+        `Нельзя удалить клиента: у него ${dealCount} ${dealCount === 1 ? 'сделка' : 'сделок'}. Сначала закройте или отмените сделки.`,
+      );
+    }
+
+    // If the client is acting as a guarantor for someone else, refuse: the
+    // dependent client should release them first via remove-guarantor.
+    const guarantorLinks = await this.clientModel.countDocuments({
+      organizationId: orgId,
+      'guarantorFor.clientId': clientObjId,
+    });
+    if (guarantorLinks > 0) {
+      throw new BadRequestException(
+        'Нельзя удалить клиента: он является поручителем по другим клиентам.',
+      );
+    }
+
+    const deleted = await this.clientModel
+      .findOneAndDelete({
+        _id: clientObjId,
+        organizationId: orgId,
+      })
+      .exec();
+
+    if (!deleted) {
+      throw new NotFoundException('Client not found');
+    }
+
+    return { success: true, deletedId: clientId };
+  }
+
   async addToBlacklist(
     orgId: Types.ObjectId,
     clientId: string,

@@ -1,3 +1,4 @@
+import { OnModuleInit } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { DealDocument, ScheduledPayment } from './schemas/deal.schema';
 import { PaymentDocument } from '../payments/schemas/payment.schema';
@@ -6,13 +7,14 @@ import { UpdateDealDto } from './dto/update-deal.dto';
 import { QueryDealDto } from './dto/query-deal.dto';
 import { ContractsService } from '../contracts/contracts.service';
 import { SmsService } from '../sms/sms.service';
-export declare class DealsService {
+export declare class DealsService implements OnModuleInit {
     private dealModel;
     private paymentModel;
     private readonly contractsService;
     private readonly smsService;
     private readonly logger;
     constructor(dealModel: Model<DealDocument>, paymentModel: Model<PaymentDocument>, contractsService: ContractsService, smsService: SmsService);
+    onModuleInit(): Promise<void>;
     create(orgId: Types.ObjectId, dto: CreateDealDto, userId: Types.ObjectId): Promise<DealDocument>;
     private applyRounding;
     findAll(orgId: Types.ObjectId, query: QueryDealDto): Promise<{

@@ -5,6 +5,7 @@ import {
   Inject,
   forwardRef,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
@@ -17,7 +18,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { SmsService } from '../sms/sms.service';
 
 @Injectable()
-export class DealsService {
+export class DealsService implements OnModuleInit {
   private readonly logger = new Logger(DealsService.name);
 
   constructor(
@@ -29,12 +30,33 @@ export class DealsService {
     private readonly smsService: SmsService,
   ) {}
 
+  // One-time migration: drop the legacy global-unique index on `dealNumber` so
+  // that two organizations can both have a deal numbered "0001". The compound
+  // `(organizationId, dealNumber)` index defined in the schema is the new guard.
+  async onModuleInit(): Promise<void> {
+    try {
+      const indexes = await this.dealModel.collection.indexes();
+      const legacy = indexes.find(
+        (i) => i.name === 'dealNumber_1' && i.unique === true,
+      );
+      if (legacy) {
+        await this.dealModel.collection.dropIndex('dealNumber_1');
+        this.logger.log('Dropped legacy global-unique index dealNumber_1');
+      }
+      await this.dealModel.syncIndexes();
+    } catch (err) {
+      this.logger.warn(
+        `Failed to sync deal indexes: ${(err as Error).message}`,
+      );
+    }
+  }
+
   async create(
     orgId: Types.ObjectId,
     dto: CreateDealDto,
     userId: Types.ObjectId,
   ): Promise<DealDocument> {
-    const dealNumber = await this.generateDealNumber();
+    const dealNumber = await this.generateDealNumber(orgId);
 
     const purchasePrice = dto.purchasePrice ?? 0;
     const totalAmount = dto.salePrice;
@@ -594,31 +616,24 @@ export class DealsService {
     return schedule;
   }
 
-  private async generateDealNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const dateStr = `${year}${month}${day}`;
-    const prefix = `HL-${dateStr}-`;
-
-    // БАГ-05 fix: find the last deal with this prefix, then verify uniqueness.
-    // The unique index on dealNumber in the schema is the final guard — if two requests
-    // race and generate the same number, only one insert succeeds; the other gets a
-    // duplicate-key error which bubbles up naturally (NestJS returns 500; callers should retry).
+  // Per-organization sequential contract numbers: 0001, 0002, ... Uniqueness is
+  // enforced by the compound `(organizationId, dealNumber)` index — if two
+  // concurrent inserts land on the same number, the loser gets a duplicate-key
+  // error and the request is retried below.
+  private async generateDealNumber(orgId: Types.ObjectId): Promise<string> {
     const lastDeal = await this.dealModel
-      .findOne({ dealNumber: { $regex: `^${prefix}` } })
+      .findOne({ organizationId: orgId, dealNumber: { $regex: '^[0-9]+$' } })
       .sort({ dealNumber: -1 })
+      .collation({ locale: 'en_US', numericOrdering: true })
       .select('dealNumber')
       .exec();
 
     let sequence = 1;
     if (lastDeal) {
-      const lastSeq = parseInt(lastDeal.dealNumber.split('-').pop() || '0', 10);
-      sequence = isNaN(lastSeq) ? 1 : lastSeq + 1;
+      const lastSeq = parseInt(lastDeal.dealNumber, 10);
+      sequence = Number.isFinite(lastSeq) ? lastSeq + 1 : 1;
     }
 
-    const seqStr = String(sequence).padStart(4, '0');
-    return `${prefix}${seqStr}`;
+    return String(sequence).padStart(4, '0');
   }
 }

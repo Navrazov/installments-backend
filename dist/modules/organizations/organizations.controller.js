@@ -20,8 +20,9 @@ const update_organization_dto_1 = require("./dto/update-organization.dto");
 const create_organization_dto_2 = require("./dto/create-organization.dto");
 const organization_schema_1 = require("./schemas/organization.schema");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const roles_guard_1 = require("../../common/guards/roles.guard");
-const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const permissions_guard_1 = require("../../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../../common/decorators/permissions.decorator");
+const permissions_1 = require("../../common/constants/permissions");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const roles_1 = require("../../common/constants/roles");
 let OrganizationsController = class OrganizationsController {
@@ -106,7 +107,7 @@ let OrganizationsController = class OrganizationsController {
 exports.OrganizationsController = OrganizationsController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.SUPER_ADMIN),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.PLATFORM_MANAGE_ORGS),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_organization_dto_1.CreateOrganizationDto]),
@@ -114,7 +115,7 @@ __decorate([
 ], OrganizationsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.ADMIN_PARTNER),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_VIEW),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('search')),
     __param(2, (0, common_1.Query)('subscriptionTier')),
@@ -128,7 +129,7 @@ __decorate([
 ], OrganizationsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_VIEW),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -137,7 +138,7 @@ __decorate([
 ], OrganizationsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_UPDATE),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -147,7 +148,7 @@ __decorate([
 ], OrganizationsController.prototype, "update", null);
 __decorate([
     (0, common_1.Post)(':id/suspend'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.SUPER_ADMIN),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.PLATFORM_MANAGE_ORGS),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -155,7 +156,7 @@ __decorate([
 ], OrganizationsController.prototype, "suspend", null);
 __decorate([
     (0, common_1.Post)(':id/activate'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.SUPER_ADMIN),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.PLATFORM_MANAGE_ORGS),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -163,7 +164,7 @@ __decorate([
 ], OrganizationsController.prototype, "activate", null);
 __decorate([
     (0, common_1.Post)(':id/subscription'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.SUPER_ADMIN),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.PLATFORM_MANAGE_SUBSCRIPTIONS),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('tier')),
     __metadata("design:type", Function),
@@ -172,7 +173,7 @@ __decorate([
 ], OrganizationsController.prototype, "updateSubscription", null);
 __decorate([
     (0, common_1.Post)(':id/branches'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_MANAGE_BRANCHES),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -182,7 +183,7 @@ __decorate([
 ], OrganizationsController.prototype, "addBranch", null);
 __decorate([
     (0, common_1.Patch)(':id/branches/:branchIndex'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_MANAGE_BRANCHES),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('branchIndex')),
     __param(2, (0, common_1.Body)()),
@@ -193,7 +194,7 @@ __decorate([
 ], OrganizationsController.prototype, "updateBranch", null);
 __decorate([
     (0, common_1.Delete)(':id/branches/:branchIndex'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.DIRECTOR),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_MANAGE_BRANCHES),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('branchIndex')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -203,7 +204,7 @@ __decorate([
 ], OrganizationsController.prototype, "removeBranch", null);
 __decorate([
     (0, common_1.Get)(':id/stats'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_VIEW_STATS),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -212,7 +213,7 @@ __decorate([
 ], OrganizationsController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Get)(':id/features/:feature'),
-    (0, roles_decorator_1.Roles)(roles_1.UserRole.CASHIER),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.ORGS_VIEW),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('feature')),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
@@ -222,7 +223,7 @@ __decorate([
 ], OrganizationsController.prototype, "checkFeature", null);
 exports.OrganizationsController = OrganizationsController = __decorate([
     (0, common_1.Controller)('organizations'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [organizations_service_1.OrganizationsService])
 ], OrganizationsController);
 //# sourceMappingURL=organizations.controller.js.map

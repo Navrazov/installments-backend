@@ -10,19 +10,19 @@ import {
 import { SmsService } from './sms.service';
 import { BroadcastSmsDto } from './dto/send-sms.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/constants/roles';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
+import { Permission } from '../../common/constants/permissions';
 import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 import { SmsMessageType } from './schemas/sms-message.schema';
 
 @Controller('sms')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class SmsController {
   constructor(private readonly smsService: SmsService) {}
 
   @Post('send')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.SMS_SEND)
   async send(
     @Req() req: AuthenticatedRequest,
     @Body() dto: BroadcastSmsDto,
@@ -37,7 +37,7 @@ export class SmsController {
   }
 
   @Get()
-  @Roles(UserRole.MANAGER)
+  @Permissions(Permission.SMS_VIEW)
   async list(
     @Req() req: AuthenticatedRequest,
     @Query('page') page?: string,

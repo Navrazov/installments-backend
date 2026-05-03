@@ -43,9 +43,7 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({
         required: true,
-        unique: true,
         trim: true,
-        index: true,
     }),
     __metadata("design:type", String)
 ], Deal.prototype, "dealNumber", void 0);
@@ -156,4 +154,5 @@ exports.DealSchema.index({ organizationId: 1, clientId: 1, status: 1 });
 exports.DealSchema.index({ organizationId: 1, managerId: 1 });
 exports.DealSchema.index({ organizationId: 1, createdAt: -1 });
 exports.DealSchema.index({ organizationId: 1, endDate: 1, status: 1 });
+exports.DealSchema.index({ organizationId: 1, dealNumber: 1 }, { unique: true });
 //# sourceMappingURL=deal.schema.js.map

@@ -29,6 +29,10 @@ export declare class ClientsController {
         };
     }>;
     update(req: AuthenticatedRequest, id: string, dto: UpdateClientDto): Promise<import("./schemas/client.schema").ClientDocument>;
+    remove(req: AuthenticatedRequest, id: string): Promise<{
+        success: true;
+        deletedId: string;
+    }>;
     toggleBlacklist(req: AuthenticatedRequest, id: string, blacklisted: boolean): Promise<import("./schemas/client.schema").ClientDocument>;
     addGuarantor(req: AuthenticatedRequest, clientId: string, body: {
         guarantorId: string;

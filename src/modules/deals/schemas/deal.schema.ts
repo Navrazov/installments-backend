@@ -31,11 +31,11 @@ export class Deal {
   @Prop({ type: Types.ObjectId, ref: 'Client', required: true, index: true })
   clientId: Types.ObjectId;
 
+  // Sequential per-org contract number (e.g. "0001", "0002"). Uniqueness is
+  // enforced by the compound `(organizationId, dealNumber)` unique index below.
   @Prop({
     required: true,
-    unique: true,
     trim: true,
-    index: true,
   })
   dealNumber: string;
 
@@ -128,3 +128,4 @@ DealSchema.index({ organizationId: 1, clientId: 1, status: 1 });
 DealSchema.index({ organizationId: 1, managerId: 1 });
 DealSchema.index({ organizationId: 1, createdAt: -1 });
 DealSchema.index({ organizationId: 1, endDate: 1, status: 1 });
+DealSchema.index({ organizationId: 1, dealNumber: 1 }, { unique: true });

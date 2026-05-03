@@ -126,6 +126,36 @@ let ClientsService = ClientsService_1 = class ClientsService {
         }
         return this.decryptClientPassport(client);
     }
+    async remove(orgId, clientId) {
+        if (!mongoose_2.Types.ObjectId.isValid(clientId)) {
+            throw new common_1.BadRequestException('Invalid client ID');
+        }
+        const clientObjId = new mongoose_2.Types.ObjectId(clientId);
+        const dealCount = await this.dealModel.countDocuments({
+            organizationId: orgId,
+            clientId: clientObjId,
+        });
+        if (dealCount > 0) {
+            throw new common_1.BadRequestException(`Нельзя удалить клиента: у него ${dealCount} ${dealCount === 1 ? 'сделка' : 'сделок'}. Сначала закройте или отмените сделки.`);
+        }
+        const guarantorLinks = await this.clientModel.countDocuments({
+            organizationId: orgId,
+            'guarantorFor.clientId': clientObjId,
+        });
+        if (guarantorLinks > 0) {
+            throw new common_1.BadRequestException('Нельзя удалить клиента: он является поручителем по другим клиентам.');
+        }
+        const deleted = await this.clientModel
+            .findOneAndDelete({
+            _id: clientObjId,
+            organizationId: orgId,
+        })
+            .exec();
+        if (!deleted) {
+            throw new common_1.NotFoundException('Client not found');
+        }
+        return { success: true, deletedId: clientId };
+    }
     async addToBlacklist(orgId, clientId, userId) {
         if (!mongoose_2.Types.ObjectId.isValid(clientId)) {
             throw new common_1.BadRequestException('Invalid client ID');

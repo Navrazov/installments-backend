@@ -22,6 +22,10 @@ export declare class ClientsService {
     findAll(orgId: Types.ObjectId, query: QueryClientDto): Promise<PaginatedResponse<ClientDocument>>;
     findById(orgId: Types.ObjectId, clientId: string): Promise<ClientDocument>;
     update(orgId: Types.ObjectId, clientId: string, dto: UpdateClientDto, userId: Types.ObjectId): Promise<ClientDocument>;
+    remove(orgId: Types.ObjectId, clientId: string): Promise<{
+        success: true;
+        deletedId: string;
+    }>;
     addToBlacklist(orgId: Types.ObjectId, clientId: string, userId: Types.ObjectId): Promise<ClientDocument>;
     removeFromBlacklist(orgId: Types.ObjectId, clientId: string, userId: Types.ObjectId): Promise<ClientDocument>;
     updateRiskStatus(orgId: Types.ObjectId, clientId: string, status: RiskStatus, userId: Types.ObjectId): Promise<ClientDocument>;

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -18,9 +19,9 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { QueryClientDto } from './dto/query-client.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/constants/roles';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
+import { Permission } from '../../common/constants/permissions';
 import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 import { RiskStatus } from './schemas/client.schema';
 
@@ -30,11 +31,12 @@ class UpdateRiskStatusBody {
 }
 
 @Controller('clients')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
+  @Permissions(Permission.CLIENTS_CREATE)
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Req() req: AuthenticatedRequest,
@@ -46,6 +48,7 @@ export class ClientsController {
   }
 
   @Get()
+  @Permissions(Permission.CLIENTS_VIEW)
   async findAll(
     @Req() req: AuthenticatedRequest,
     @Query() query: QueryClientDto,
@@ -54,10 +57,8 @@ export class ClientsController {
     return this.clientsService.findAll(orgId, query);
   }
 
-  // БАГ-10 fix: restrict export to managers/owners only — any employee could otherwise
-  // dump the entire client database including passport data
   @Get('export/all')
-  @Roles(UserRole.MANAGER, UserRole.ORG_MANAGER, UserRole.ORG_OWNER, UserRole.DIRECTOR)
+  @Permissions(Permission.CLIENTS_EXPORT)
   async exportClients(
     @Req() req: AuthenticatedRequest,
   ) {
@@ -66,6 +67,7 @@ export class ClientsController {
   }
 
   @Get('search')
+  @Permissions(Permission.CLIENTS_VIEW)
   async search(
     @Req() req: AuthenticatedRequest,
     @Query('q') q: string,
@@ -75,6 +77,7 @@ export class ClientsController {
   }
 
   @Get(':id')
+  @Permissions(Permission.CLIENTS_VIEW)
   async findById(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -84,6 +87,7 @@ export class ClientsController {
   }
 
   @Get(':id/guarantors')
+  @Permissions(Permission.CLIENTS_VIEW)
   async getGuarantors(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -93,6 +97,7 @@ export class ClientsController {
   }
 
   @Get(':id/history')
+  @Permissions(Permission.CLIENTS_VIEW)
   async getClientHistory(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -102,6 +107,7 @@ export class ClientsController {
   }
 
   @Patch(':id')
+  @Permissions(Permission.CLIENTS_UPDATE)
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -112,7 +118,19 @@ export class ClientsController {
     return this.clientsService.update(orgId, id, dto, userId);
   }
 
+  @Delete(':id')
+  @Permissions(Permission.CLIENTS_DELETE)
+  @HttpCode(HttpStatus.OK)
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    const orgId = req.user.organizationId!;
+    return this.clientsService.remove(orgId, id);
+  }
+
   @Post(':id/blacklist')
+  @Permissions(Permission.CLIENTS_BLACKLIST)
   @HttpCode(HttpStatus.OK)
   async toggleBlacklist(
     @Req() req: AuthenticatedRequest,
@@ -129,6 +147,7 @@ export class ClientsController {
   }
 
   @Post(':id/add-guarantor')
+  @Permissions(Permission.CLIENTS_UPDATE)
   @HttpCode(HttpStatus.OK)
   async addGuarantor(
     @Req() req: AuthenticatedRequest,
@@ -140,6 +159,7 @@ export class ClientsController {
   }
 
   @Post(':id/remove-guarantor')
+  @Permissions(Permission.CLIENTS_UPDATE)
   @HttpCode(HttpStatus.OK)
   async removeGuarantor(
     @Req() req: AuthenticatedRequest,
@@ -150,10 +170,9 @@ export class ClientsController {
     return this.clientsService.removeGuarantor(orgId, clientId, body.guarantorId);
   }
 
-  // БАГ-09 fix: restrict import to managers/owners and cap batch size
   @Post('import')
+  @Permissions(Permission.CLIENTS_IMPORT)
   @HttpCode(HttpStatus.CREATED)
-  @Roles(UserRole.MANAGER, UserRole.ORG_MANAGER, UserRole.ORG_OWNER, UserRole.DIRECTOR)
   async importClients(
     @Req() req: AuthenticatedRequest,
     @Body() body: { clients: CreateClientDto[] },
@@ -169,8 +188,8 @@ export class ClientsController {
     return this.clientsService.importClients(orgId, body.clients, userId);
   }
 
-  // БАГ-11 fix: use a typed DTO with @IsEnum validation instead of raw @Body('riskStatus')
   @Patch(':id/risk-status')
+  @Permissions(Permission.CLIENTS_BLACKLIST)
   async updateRiskStatus(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,

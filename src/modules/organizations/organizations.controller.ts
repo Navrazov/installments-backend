@@ -19,25 +19,26 @@ import {
   SubscriptionStatus,
 } from './schemas/organization.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
+import { Permission } from '../../common/constants/permissions';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '../../common/constants/roles';
 import { JwtPayloadUser } from '../../common/interfaces/request.interface';
 
 @Controller('organizations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post()
-  @Roles(UserRole.SUPER_ADMIN)
+  @Permissions(Permission.PLATFORM_MANAGE_ORGS)
   async create(@Body() dto: CreateOrganizationDto) {
     return this.organizationsService.create(dto);
   }
 
   @Get()
-  @Roles(UserRole.ADMIN_PARTNER)
+  @Permissions(Permission.ORGS_VIEW)
   async findAll(
     @CurrentUser() currentUser: JwtPayloadUser,
     @Query('search') search?: string,
@@ -72,7 +73,7 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.CASHIER)
+  @Permissions(Permission.ORGS_VIEW)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -82,7 +83,7 @@ export class OrganizationsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.ORGS_UPDATE)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateOrganizationDto,
@@ -103,19 +104,19 @@ export class OrganizationsController {
   }
 
   @Post(':id/suspend')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Permissions(Permission.PLATFORM_MANAGE_ORGS)
   async suspend(@Param('id') id: string) {
     return this.organizationsService.suspend(id);
   }
 
   @Post(':id/activate')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Permissions(Permission.PLATFORM_MANAGE_ORGS)
   async activate(@Param('id') id: string) {
     return this.organizationsService.activate(id);
   }
 
   @Post(':id/subscription')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Permissions(Permission.PLATFORM_MANAGE_SUBSCRIPTIONS)
   async updateSubscription(
     @Param('id') id: string,
     @Body('tier') tier: SubscriptionTier,
@@ -124,7 +125,7 @@ export class OrganizationsController {
   }
 
   @Post(':id/branches')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.ORGS_MANAGE_BRANCHES)
   async addBranch(
     @Param('id') id: string,
     @Body() branchDto: OrganizationBranchDto,
@@ -135,7 +136,7 @@ export class OrganizationsController {
   }
 
   @Patch(':id/branches/:branchIndex')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.ORGS_MANAGE_BRANCHES)
   async updateBranch(
     @Param('id') id: string,
     @Param('branchIndex') branchIndex: string,
@@ -151,7 +152,7 @@ export class OrganizationsController {
   }
 
   @Delete(':id/branches/:branchIndex')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.ORGS_MANAGE_BRANCHES)
   async removeBranch(
     @Param('id') id: string,
     @Param('branchIndex') branchIndex: string,
@@ -165,7 +166,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/stats')
-  @Roles(UserRole.CASHIER)
+  @Permissions(Permission.ORGS_VIEW_STATS)
   async getStats(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -175,7 +176,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/features/:feature')
-  @Roles(UserRole.CASHIER)
+  @Permissions(Permission.ORGS_VIEW)
   async checkFeature(
     @Param('id') id: string,
     @Param('feature') feature: string,

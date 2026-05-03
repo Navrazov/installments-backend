@@ -14,19 +14,20 @@ import { UsersService } from './users.service';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
+import { Permission } from '../../common/constants/permissions';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, ROLE_HIERARCHY } from '../../common/constants/roles';
 import { JwtPayloadUser } from '../../common/interfaces/request.interface';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.MANAGER)
+  @Permissions(Permission.USERS_VIEW)
   async findAll(
     @CurrentUser() currentUser: JwtPayloadUser,
     @Query('role') role?: UserRole,
@@ -61,7 +62,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.MANAGER)
+  @Permissions(Permission.USERS_VIEW)
   async findOne(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -85,7 +86,7 @@ export class UsersController {
   }
 
   @Post('invite')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.USERS_INVITE)
   async invite(
     @Body() dto: InviteUserDto,
     @CurrentUser() currentUser: JwtPayloadUser,
@@ -120,7 +121,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.USERS_UPDATE)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -159,7 +160,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.DIRECTOR)
+  @Permissions(Permission.USERS_DEACTIVATE)
   async deactivate(
     @Param('id') id: string,
     @CurrentUser() currentUser: JwtPayloadUser,

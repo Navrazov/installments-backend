@@ -30,8 +30,22 @@ let DealsService = DealsService_1 = class DealsService {
         this.smsService = smsService;
         this.logger = new common_1.Logger(DealsService_1.name);
     }
+    async onModuleInit() {
+        try {
+            const indexes = await this.dealModel.collection.indexes();
+            const legacy = indexes.find((i) => i.name === 'dealNumber_1' && i.unique === true);
+            if (legacy) {
+                await this.dealModel.collection.dropIndex('dealNumber_1');
+                this.logger.log('Dropped legacy global-unique index dealNumber_1');
+            }
+            await this.dealModel.syncIndexes();
+        }
+        catch (err) {
+            this.logger.warn(`Failed to sync deal indexes: ${err.message}`);
+        }
+    }
     async create(orgId, dto, userId) {
-        const dealNumber = await this.generateDealNumber();
+        const dealNumber = await this.generateDealNumber(orgId);
         const purchasePrice = dto.purchasePrice ?? 0;
         const totalAmount = dto.salePrice;
         const markup = Math.max(0, dto.salePrice - purchasePrice);
@@ -421,25 +435,19 @@ let DealsService = DealsService_1 = class DealsService {
         }
         return schedule;
     }
-    async generateDealNumber() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const dateStr = `${year}${month}${day}`;
-        const prefix = `HL-${dateStr}-`;
+    async generateDealNumber(orgId) {
         const lastDeal = await this.dealModel
-            .findOne({ dealNumber: { $regex: `^${prefix}` } })
+            .findOne({ organizationId: orgId, dealNumber: { $regex: '^[0-9]+$' } })
             .sort({ dealNumber: -1 })
+            .collation({ locale: 'en_US', numericOrdering: true })
             .select('dealNumber')
             .exec();
         let sequence = 1;
         if (lastDeal) {
-            const lastSeq = parseInt(lastDeal.dealNumber.split('-').pop() || '0', 10);
-            sequence = isNaN(lastSeq) ? 1 : lastSeq + 1;
+            const lastSeq = parseInt(lastDeal.dealNumber, 10);
+            sequence = Number.isFinite(lastSeq) ? lastSeq + 1 : 1;
         }
-        const seqStr = String(sequence).padStart(4, '0');
-        return `${prefix}${seqStr}`;
+        return String(sequence).padStart(4, '0');
     }
 };
 exports.DealsService = DealsService;
