@@ -24,12 +24,10 @@ let OverdueController = class OverdueController {
     }
     async findAll(req, query) {
         const orgId = req.user.organizationId.toString();
-        await this.overdueService.syncOverdueFromDeals(orgId);
         return this.overdueService.findAll(orgId, query);
     }
     async getStats(req) {
         const orgId = req.user.organizationId.toString();
-        await this.overdueService.syncOverdueFromDeals(orgId);
         return this.overdueService.getStats(orgId);
     }
     async findById(req, id) {

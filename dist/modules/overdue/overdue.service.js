@@ -284,7 +284,6 @@ let OverdueService = OverdueService_1 = class OverdueService {
                     .findOne({
                     organizationId: orgOid,
                     dealId: deal._id,
-                    status: { $ne: overdue_schema_1.OverdueStatus.RESOLVED },
                 })
                     .exec();
                 if (existing) {

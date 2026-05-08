@@ -27,10 +27,7 @@ let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    async findAll(currentUser, role, isActive, search, page, limit) {
-        const orgId = currentUser.organizationId
-            ? currentUser.organizationId.toString()
-            : undefined;
+    async findAll(currentUser, role, isActive, search, organizationId, page, limit) {
         const filters = {
             role,
             isActive: isActive !== undefined ? isActive === 'true' : undefined,
@@ -38,13 +35,15 @@ let UsersController = class UsersController {
             page: page ? parseInt(page, 10) : 1,
             limit: limit ? parseInt(limit, 10) : 20,
         };
-        if (currentUser.role === roles_1.UserRole.SUPER_ADMIN) {
-            return this.usersService.findAll(undefined, filters);
+        const isPlatformAdmin = currentUser.role === roles_1.UserRole.SUPER_ADMIN ||
+            currentUser.role === roles_1.UserRole.ADMIN_PARTNER;
+        if (isPlatformAdmin) {
+            return this.usersService.findAll(organizationId, filters);
         }
-        if (currentUser.role === roles_1.UserRole.ADMIN_PARTNER) {
-            return this.usersService.findAll(undefined, filters);
-        }
-        return this.usersService.findAll(orgId, filters);
+        const ownOrgId = currentUser.organizationId
+            ? currentUser.organizationId.toString()
+            : undefined;
+        return this.usersService.findAll(ownOrgId, filters);
     }
     async findOne(id, currentUser) {
         const user = await this.usersService.findById(id);
@@ -112,6 +111,23 @@ let UsersController = class UsersController {
         }
         return this.usersService.deactivate(id);
     }
+    async activate(id, currentUser) {
+        const targetUser = await this.usersService.findById(id);
+        if (currentUser.role !== roles_1.UserRole.SUPER_ADMIN &&
+            currentUser.role !== roles_1.UserRole.ADMIN_PARTNER) {
+            if (currentUser.organizationId &&
+                targetUser.organizationId?.toString() !==
+                    currentUser.organizationId.toString()) {
+                throw new common_1.ForbiddenException('You can only activate users within your organization');
+            }
+        }
+        const currentHierarchy = roles_1.ROLE_HIERARCHY[currentUser.role] ?? 0;
+        const targetHierarchy = roles_1.ROLE_HIERARCHY[targetUser.role] ?? 0;
+        if (targetHierarchy >= currentHierarchy) {
+            throw new common_1.ForbiddenException('You cannot activate a user with an equal or higher role');
+        }
+        return this.usersService.activate(id);
+    }
     validateInvitePermission(currentUser, targetRole) {
         const allowedRolesByInviter = {
             [roles_1.UserRole.SUPER_ADMIN]: [
@@ -164,10 +180,11 @@ __decorate([
     __param(1, (0, common_1.Query)('role')),
     __param(2, (0, common_1.Query)('isActive')),
     __param(3, (0, common_1.Query)('search')),
-    __param(4, (0, common_1.Query)('page')),
-    __param(5, (0, common_1.Query)('limit')),
+    __param(4, (0, common_1.Query)('organizationId')),
+    __param(5, (0, common_1.Query)('page')),
+    __param(6, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findAll", null);
 __decorate([
@@ -207,6 +224,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "deactivate", null);
+__decorate([
+    (0, common_1.Post)(':id/activate'),
+    (0, permissions_decorator_1.Permissions)(permissions_1.Permission.USERS_DEACTIVATE),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "activate", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),

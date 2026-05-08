@@ -352,11 +352,13 @@ export class OverdueService {
       }
 
       if (shouldBeOverdue) {
+        // Find any existing overdue record for this deal — including
+        // resolved ones — so we update it in place instead of creating
+        // a duplicate when the deal still has unpaid scheduled payments.
         const existing = await this.overdueModel
           .findOne({
             organizationId: orgOid,
             dealId: deal._id,
-            status: { $ne: OverdueStatus.RESOLVED },
           })
           .exec();
 

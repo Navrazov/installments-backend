@@ -33,13 +33,10 @@ export class UsersController {
     @Query('role') role?: UserRole,
     @Query('isActive') isActive?: string,
     @Query('search') search?: string,
+    @Query('organizationId') organizationId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const orgId = currentUser.organizationId
-      ? currentUser.organizationId.toString()
-      : undefined;
-
     const filters = {
       role,
       isActive: isActive !== undefined ? isActive === 'true' : undefined,
@@ -48,17 +45,19 @@ export class UsersController {
       limit: limit ? parseInt(limit, 10) : 20,
     };
 
-    // Super admins can see all users; org users are scoped to their org
-    if (currentUser.role === UserRole.SUPER_ADMIN) {
-      return this.usersService.findAll(undefined, filters);
+    const isPlatformAdmin =
+      currentUser.role === UserRole.SUPER_ADMIN ||
+      currentUser.role === UserRole.ADMIN_PARTNER;
+
+    if (isPlatformAdmin) {
+      return this.usersService.findAll(organizationId, filters);
     }
 
-    if (currentUser.role === UserRole.ADMIN_PARTNER) {
-      // Admin partners can see all users (they manage multiple orgs)
-      return this.usersService.findAll(undefined, filters);
-    }
+    const ownOrgId = currentUser.organizationId
+      ? currentUser.organizationId.toString()
+      : undefined;
 
-    return this.usersService.findAll(orgId, filters);
+    return this.usersService.findAll(ownOrgId, filters);
   }
 
   @Get(':id')
@@ -198,6 +197,40 @@ export class UsersController {
     }
 
     return this.usersService.deactivate(id);
+  }
+
+  @Post(':id/activate')
+  @Permissions(Permission.USERS_DEACTIVATE)
+  async activate(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: JwtPayloadUser,
+  ) {
+    const targetUser = await this.usersService.findById(id);
+
+    if (
+      currentUser.role !== UserRole.SUPER_ADMIN &&
+      currentUser.role !== UserRole.ADMIN_PARTNER
+    ) {
+      if (
+        currentUser.organizationId &&
+        targetUser.organizationId?.toString() !==
+          currentUser.organizationId.toString()
+      ) {
+        throw new ForbiddenException(
+          'You can only activate users within your organization',
+        );
+      }
+    }
+
+    const currentHierarchy = ROLE_HIERARCHY[currentUser.role] ?? 0;
+    const targetHierarchy = ROLE_HIERARCHY[targetUser.role] ?? 0;
+    if (targetHierarchy >= currentHierarchy) {
+      throw new ForbiddenException(
+        'You cannot activate a user with an equal or higher role',
+      );
+    }
+
+    return this.usersService.activate(id);
   }
 
   private validateInvitePermission(
